@@ -24,6 +24,10 @@ public class DirectRandomGamer extends Gamer {
     private Role role;
     private MachineState currentState;
     private StateMachine stateMachine;          
+	@Override
+	public String getName() {
+		return "DirectRandom";
+	}
 
 	@Override
 	public boolean start(String matchId, GdlProposition roleName, Game game,
