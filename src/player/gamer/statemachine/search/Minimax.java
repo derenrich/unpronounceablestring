@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
 
 import player.gamer.statemachine.StateMachineGamer;
 import util.statemachine.MachineState;
@@ -26,7 +27,11 @@ public class Minimax extends StateMachineGamer {
 	public void stateMachineMetaGame(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
-		search_depth = estimateDepth(50,4);
+		search_depth = 4;//estimateDepth(50,4);
+		values = new ConcurrentHashMap<MachineState,Float>();
+		depths = new ConcurrentHashMap<MachineState,Integer>();
+		moves = new ConcurrentHashMap<MachineState,Move>();
+
 	}
 	
 	private int estimateDepth(int trials, int max_depth) throws TransitionDefinitionException, MoveDefinitionException{
@@ -43,42 +48,42 @@ public class Minimax extends StateMachineGamer {
 		}
 		return min_depth;
 	}
-	private HashMap<MachineState,Integer> values;
-	private HashMap<MachineState,Move> moves;
-	private HashMap<MachineState,Integer> depths;
+	private ConcurrentHashMap<MachineState,Float> values;
+	private ConcurrentHashMap<MachineState,Move> moves;
+	private ConcurrentHashMap<MachineState,Integer> depths;
 	
 	public void findMinMax(int depth) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
-		values = new HashMap<MachineState,Integer>();
-		depths = new HashMap<MachineState,Integer>();
-		moves = new HashMap<MachineState,Move>();
 		iterMinMax(depth, this.getCurrentState());		
 	}
+	// we prefer incomplete to getting nothing but prefer getting something to it
+	final static float INCOMPLETE_SEARCH_VALUE = 0.5f;
 	private void iterMinMax(int depth, MachineState s) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		StateMachine sm = this.getStateMachine();
-		// is it worth recursing?
+		// have we done this before?
 		if(!depths.containsKey(s) || depths.get(s) < depth){
+			// are we at the base-case?
 			if(sm.isTerminal(s)){
 				int score = getGoal(s);
-				values.put(s, score);
+				values.put(s, (float) score);
 				depths.put(s, depth);
-			} else if(depth <= 0){
-				values.put(s, 1);
-				depths.put(s, depth);				
-			}else {
+			} else if(depth == 0){
+				values.put(s, INCOMPLETE_SEARCH_VALUE);
+				depths.put(s, depth);			
+			} else {
 				List<Move> our_moves = sm.getLegalMoves(s, this.getRole());
 				List<Role> opposing_roles = new ArrayList<Role>(sm.getRoles());
 				opposing_roles.remove(this.getRole());				
 				Move best_move = null;
-				int max_min_val = 0;
-				
+				float max_min_val = 0;				
 				for(Move our_move : our_moves) {
-					int min_val = 100;
+					float min_val = 100;
 					for(List<Move> joint_move : sm.getLegalJointMoves(s, this.getRole(), our_move)) {
 						MachineState next_state = sm.getNextState(s, joint_move);
 						iterMinMax(depth - 1, next_state);
-						min_val = Math.min(min_val, values.get(next_state));
+						float state_val = values.get(next_state);
+						min_val = Math.min(min_val, state_val);
 					}
-					if (min_val >= max_min_val){
+					if(min_val >= max_min_val){
 						max_min_val = min_val;
 						best_move = our_move;
 					}
@@ -101,12 +106,55 @@ public class Minimax extends StateMachineGamer {
 	@Override
 	public Move stateMachineSelectMove(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
-			GoalDefinitionException {		
-		findMinMax(4);
+			GoalDefinitionException {
+		MinimaxThread mmt = new MinimaxThread(search_depth);
+	    Thread t = new Thread(mmt);
+	    t.start();
+	    try {
+			// Thread.sleep(timeout - System.currentTimeMillis());
+	    	Thread.sleep(10*1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	    mmt.stop();
 		Move final_move = moves.get(this.getCurrentState());
+		float final_value = values.get(this.getCurrentState());
+		System.out.println("Final value: " + final_value);
+		if(final_move == null) {
+			System.err.println("Minimax: Failed to get valid move in time. Random play.");			
+			final_move = this.getStateMachine().getRandomMove(this.getCurrentState(), this.getRole());
+		}
 		return final_move;
 	}
+    class MinimaxThread implements Runnable {
+    	private int depth;
+		private boolean stop = false;
+    	MinimaxThread(int depth){
+    		this.depth = depth;
+    	}
+		@Override
+		public void run() {		
+			stop = false;
+			int cur_depth = depth;
+			try {
+				while(!stop){
+					System.out.println("looking: " + cur_depth);
+					findMinMax(cur_depth);
+					cur_depth+=1;
+				}
+			} catch (GoalDefinitionException e) {
+				e.printStackTrace();
+			} catch (MoveDefinitionException e) {
+				e.printStackTrace();
+			} catch (TransitionDefinitionException e) {
+				e.printStackTrace();
+			}
+		}
+		public void stop(){
+			stop = true;
+		}
 
+    }
 	@Override
 	public void stateMachineStop() {
 		// TODO Auto-generated method stub
