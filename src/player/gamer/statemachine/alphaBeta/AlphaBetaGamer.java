@@ -75,8 +75,7 @@ public class AlphaBetaGamer extends StateMachineGamer {
 				List<Move> our_moves = sm.getLegalMoves(s, this.getRole());
 				List<Role> opposing_roles = new ArrayList<Role>(sm.getRoles());
 				opposing_roles.remove(this.getRole());				
-				Move best_move = null;
-				float max_min_val = 0;			
+				Move best_move = null;		
 				// Assume we go first. Opponent has full info for optimal counter.
 				float a = alpha;
 				for(Move our_move : our_moves) {
@@ -86,7 +85,7 @@ public class AlphaBetaGamer extends StateMachineGamer {
 						iterMinMax(depth - 1, next_state, a, b);
 						float state_val = values.get(next_state);
 						b = Math.min(b, state_val);
-						if (b <= alpha)
+						if (b <= a)
 							break;
 					}
 					// a = Math.max(a, beta);
@@ -97,9 +96,9 @@ public class AlphaBetaGamer extends StateMachineGamer {
 					if ( beta <= a)
 						break;
 				}
-				values.put(s, max_min_val);
+				values.put(s, a);
 				depths.put(s, depth);
-				moves.put(s, best_move);	
+				moves.put(s, best_move);
 			}
 		}
 	}
@@ -147,7 +146,7 @@ public class AlphaBetaGamer extends StateMachineGamer {
 			int cur_depth = depth;
 			try {
 				while(!stop){
-					System.out.println("looking: " + cur_depth);
+					//System.out.println("looking: " + cur_depth);
 					findMinMax(cur_depth);
 					cur_depth+=1;
 				}
