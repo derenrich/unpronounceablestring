@@ -28,7 +28,7 @@ public class AlphaBetaGamer extends StateMachineGamer {
 	public void stateMachineMetaGame(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
-		search_depth = 4;//estimateDepth(50,4);
+		search_depth = 9;//estimateDepth(50,4);
 		values = new ConcurrentHashMap<MachineState,Float>();
 		depths = new ConcurrentHashMap<MachineState,Integer>();
 		moves = new ConcurrentHashMap<MachineState,Move>();
@@ -54,8 +54,8 @@ public class AlphaBetaGamer extends StateMachineGamer {
 	private ConcurrentHashMap<MachineState,Integer> depths;
 	
 	public void findMinMax(int depth) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
-		// Asuming 0-100 range
-		iterMinMax(depth, this.getCurrentState(), -1, 101);		
+		// Assuming 0-100 range
+		iterMinMax(depth, this.getCurrentState(), 0, 100);		
 	}
 	// we prefer incomplete to getting nothing but prefer getting something to it
 	final static float INCOMPLETE_SEARCH_VALUE = 0.5f;
@@ -75,28 +75,30 @@ public class AlphaBetaGamer extends StateMachineGamer {
 				List<Move> our_moves = sm.getLegalMoves(s, this.getRole());
 				List<Role> opposing_roles = new ArrayList<Role>(sm.getRoles());
 				opposing_roles.remove(this.getRole());				
-				Move best_move = null;		
-				// Assume we go first. Opponent has full info for optimal counter.
-				float a = alpha;
+				Move best_move = null;
 				for(Move our_move : our_moves) {
+					float a = alpha;
 					float b = beta;
 					for(List<Move> joint_move : sm.getLegalJointMoves(s, this.getRole(), our_move)) {
+						if(best_move==null)
+							best_move = our_move;
 						MachineState next_state = sm.getNextState(s, joint_move);
 						iterMinMax(depth - 1, next_state, a, b);
 						float state_val = values.get(next_state);
 						b = Math.min(b, state_val);
-						if (b <= a)
+						if(b<=a) {
 							break;
+						}
 					}
-					// a = Math.max(a, beta);
-					if(beta >= a){
-						a = beta;
+					if(b >= alpha){
+						alpha = b;
 						best_move = our_move;
 					}
-					if ( beta <= a)
+					if(beta<=alpha) {
 						break;
+					}
 				}
-				values.put(s, a);
+				values.put(s, alpha);
 				depths.put(s, depth);
 				moves.put(s, best_move);
 			}
@@ -146,7 +148,7 @@ public class AlphaBetaGamer extends StateMachineGamer {
 			int cur_depth = depth;
 			try {
 				while(!stop){
-					//System.out.println("looking: " + cur_depth);
+					System.out.println("looking: " + cur_depth);
 					findMinMax(cur_depth);
 					cur_depth+=1;
 				}
