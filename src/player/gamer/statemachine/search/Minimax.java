@@ -1,12 +1,11 @@
 package player.gamer.statemachine.search;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 
 import player.gamer.statemachine.StateMachineGamer;
+import util.statemachine.CachedStateMachine;
 import util.statemachine.MachineState;
 import util.statemachine.Move;
 import util.statemachine.Role;
@@ -17,16 +16,17 @@ import util.statemachine.exceptions.TransitionDefinitionException;
 import util.statemachine.implementation.prover.ProverStateMachine;
 
 public class Minimax extends StateMachineGamer {
-
 	@Override
 	public StateMachine getInitialStateMachine() {
-		return new ProverStateMachine();
+		return new CachedStateMachine(new ProverStateMachine());
+		//return new ProverStateMachine();
 	}
-	private int initial_search_depth = 4;
+	private int initial_search_depth = 3;
 	MinimaxThread searcher;
 	Thread search_thread;
 	
-	final int HashCapacity = 30000;
+	final int HashCapacity = 300000;
+	final int MaxHashSize = 500000;
 	
 	@Override
 	public void stateMachineMetaGame(long timeout)
@@ -35,9 +35,16 @@ public class Minimax extends StateMachineGamer {
 		values = new ConcurrentHashMap<MachineState,Float>(HashCapacity);
 		depths = new ConcurrentHashMap<MachineState,Integer>(HashCapacity);
 		moves = new ConcurrentHashMap<MachineState,Move>(HashCapacity);
-		searcher = new MinimaxThread(initial_search_depth);
-		search_thread = new Thread(searcher);
-		search_thread.start();
+	    try {
+		    searcher = new MinimaxThread(initial_search_depth);
+		    search_thread = new Thread(searcher);
+		    search_thread.start();
+			Thread.sleep(timeout - System.currentTimeMillis());
+		    searcher.stop();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 	private int estimateDepth(int trials, int max_depth) throws TransitionDefinitionException, MoveDefinitionException{
@@ -97,18 +104,35 @@ public class Minimax extends StateMachineGamer {
 				List<Role> opposing_roles = new ArrayList<Role>(sm.getRoles());
 				opposing_roles.remove(this.getRole());				
 				Move best_move = null;
-				float max_min_val = 0;				
+				float max_min_val = 0;
 				for(Move our_move : our_moves) {
 					float min_val = 100;
-					for(List<Move> joint_move : sm.getLegalJointMoves(s, this.getRole(), our_move)) {
+					List<List<Move>> joint_moves = sm.getLegalJointMoves(s, this.getRole(), our_move);
+					for(List<Move> joint_move : joint_moves) {
 						MachineState next_state = sm.getNextState(s, joint_move);
+						if(next_state == null){
+							// error in the GDL
+							continue;
+						}
 						iterMinMax(depth - 1, next_state);
+						// did we run out of time?
+						if(Thread.currentThread().isInterrupted()){
+							return;
+						}
 						float state_val = decorateGoal(values.get(next_state));
 						min_val = Math.min(min_val, state_val);
+						// hacky alpha beta
+						if(min_val < 0.5){
+							break;
+						}
 					}
 					if(min_val >= max_min_val){
 						max_min_val = min_val;
 						best_move = our_move;
+					}
+					// hacky alpha beta
+					if(max_min_val > 99){
+						break;
 					}
 				}
 				values.put(s, max_min_val);
@@ -131,25 +155,31 @@ public class Minimax extends StateMachineGamer {
 	public Move stateMachineSelectMove(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
-		
 	    searcher.stop();
-
+		search_thread.interrupt();
+		// check if we should blow away our caches
+		if(values.size() > this.MaxHashSize) {			
+			values = new ConcurrentHashMap<MachineState,Float>(HashCapacity);
+			depths = new ConcurrentHashMap<MachineState,Integer>(HashCapacity);
+			moves = new ConcurrentHashMap<MachineState,Move>(HashCapacity);
+		}
 	    try {
 		    searcher = new MinimaxThread(initial_search_depth);
 		    search_thread = new Thread(searcher);
 		    search_thread.start();
 			Thread.sleep(timeout - System.currentTimeMillis());
+		    searcher.stop();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	    
 		Move final_move = moves.get(this.getCurrentState());
-		float final_value = values.get(this.getCurrentState());
-
+		
 		if(final_move == null) {
 			System.err.println("Minimax: Failed to get valid move in time. Random play.");			
 			return this.getStateMachine().getRandomMove(this.getCurrentState(), this.getRole());
 		} else {
+			float final_value = values.get(this.getCurrentState());
 			System.out.println("Final value: " + final_value);
 			return final_move;
 		}
@@ -168,8 +198,10 @@ public class Minimax extends StateMachineGamer {
 			int cur_depth = depth;
 			try {
 				while(!stop){
-					System.out.println("looking: " + cur_depth);
 					findMinMax(cur_depth);
+					if(!Thread.currentThread().isInterrupted() && cur_depth < 100){
+						System.out.println("looked: " + cur_depth);
+					}
 					cur_depth+=1;
 				}
 			} catch (GoalDefinitionException e) {
@@ -183,18 +215,17 @@ public class Minimax extends StateMachineGamer {
 		public void stop(){
 			stop = true;
 		}
-
     }
 	@Override
 	public void stateMachineStop() {
-		// TODO Auto-generated method stub
-
+	    searcher.stop();
+		search_thread.interrupt();
 	}
 
 	@Override
 	public void stateMachineAbort() {
-		// TODO Auto-generated method stub
-
+	    searcher.stop();
+		search_thread.interrupt();
 	}
 	@Override
 	public String getName() {
