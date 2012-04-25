@@ -1,0 +1,357 @@
+alpha-beta
+
+Onestep (tilyard)
+Final value: 90.0
+Move: b
+Explored States: 2
+
+Pearls
+Final value: 90.0
+Move: b
+Explored States: 19
+
+Haystack
+Final value: 100.0
+Move: b
+Explored States: 1
+
+Survival
+Final value: 100.0
+Move: f
+Explored States: 2
+
+Tictactoe (varies with definition greatly)
+Final value: 50.0
+Move: ( mark 1 1 )
+Explored States: 4408
+
+tilyard local Tic Tac Toe
+Final value: 50.0
+Move: ( mark 2 1 )
+Explored States: 2992
+
+
+Tictactoelargesuicide
+Final value: 0.5
+Move: ( play 4 2 x )
+Explored States: 342736
+
+start clock: 1800
+
+full log of stuff ran:
+
+Updating the game cache...
+Updating the game cache took: 3551ms.
+Gamer AlphaBeta started on port 9147
+Tiltyard successfully started AlphaBeta on port 9147.
+Gamer SimpleSearchLight started on port 9148
+Tiltyard successfully started SimpleSearchLight on port 9148.
+looked: 3
+looked: 4
+looked: 5
+looked: 6
+looked: 7
+looked: 8
+looked: 9
+looked: 3
+looked: 4
+looked: 5
+looked: 6
+looked: 7
+looked: 8
+looked: 9
+Final value: 0.5
+Move: ( play 2 5 x )
+Explored States: 368002
+( play 2 5 x )
+noop
+
+looked: 3
+looked: 4
+looked: 5
+looked: 6
+looked: 7
+looked: 8
+Final value: 0.5
+Move: noop
+Explored States: 368077
+noop
+( play 3 1 o )
+
+looked: 3
+looked: 4
+looked: 5
+looked: 6
+looked: 7
+Final value: 0.5
+Move: ( play 2 4 x )
+Explored States: 368140
+( play 2 4 x )
+noop
+
+looked: 3
+looked: 4
+looked: 5
+looked: 6
+Final value: 0.5
+Move: noop
+Explored States: 368224
+noop
+( play 1 2 o )
+
+looked: 3
+looked: 4
+looked: 5
+Final value: 0.5
+Move: ( play 3 2 x )
+Explored States: 368290
+( play 3 2 x )
+noop
+
+looked: 3
+looked: 4
+Final value: 0.5
+Move: noop
+Explored States: 368359
+noop
+( play 4 1 o )
+
+looked: 3
+Final value: 0.5
+Move: ( play 3 4 x )
+Explored States: 368416
+( play 3 4 x )
+noop
+
+Final value: 0.5
+Move: noop
+Explored States: 368474
+noop
+( play 1 4 o )
+
+Final value: 0.5
+Move: ( play 1 1 x )
+Explored States: 368517
+( play 1 1 x )
+noop
+
+Final value: 0.5
+Move: noop
+Explored States: 368552
+noop
+( play 5 5 o )
+
+Final value: 0.5
+Move: ( play 5 3 x )
+Explored States: 368588
+( play 5 3 x )
+noop
+
+Minimax: Failed to get valid move in time. Random play.
+noop
+( play 5 1 o )
+
+Final value: 0.5
+Move: ( play 4 3 x )
+Explored States: 368653
+( play 4 3 x )
+noop
+
+Minimax: Failed to get valid move in time. Random play.
+noop
+( play 4 2 o )
+
+Final value: 0.5
+Move: ( play 4 5 x )
+Explored States: 368712
+( play 4 5 x )
+noop
+
+Final value: 0.5
+Move: noop
+Explored States: 368745
+noop
+( play 3 5 o )
+
+Final value: 0.5
+Move: ( play 3 3 x )
+Explored States: 368775
+( play 3 3 x )
+noop
+
+Final value: 0.5
+Move: noop
+Explored States: 368808
+noop
+( play 2 3 o )
+
+Final value: 0.5
+Move: ( play 5 4 x )
+Explored States: 368837
+( play 5 4 x )
+noop
+
+looked: 3
+Final value: 0.5
+Move: noop
+Explored States: 368870
+noop
+( play 5 2 o )
+
+looked: 3
+Final value: 0.5
+Move: ( play 2 2 x )
+Explored States: 368897
+( play 2 2 x )
+noop
+
+looked: 3
+looked: 4
+looked: 5
+looked: 6
+looked: 7
+Final value: 50.0
+Move: noop
+Explored States: 368905
+noop
+( play 4 4 o )
+
+looked: 3
+looked: 4
+looked: 5
+looked: 6
+looked: 7
+looked: 8
+looked: 9
+looked: 10
+looked: 11
+looked: 12
+looked: 13
+looked: 14
+looked: 15
+looked: 16
+looked: 17
+looked: 18
+looked: 19
+Final value: 50.0
+Move: ( play 1 3 x )
+Explored States: 368911
+( play 1 3 x )
+noop
+
+looked: 20
+looked: 3
+looked: 4
+looked: 5
+looked: 6
+looked: 7
+looked: 8
+looked: 9
+looked: 10
+looked: 11
+looked: 12
+looked: 13
+looked: 14
+looked: 15
+looked: 16
+looked: 17
+looked: 18
+looked: 19
+looked: 20
+looked: 21
+looked: 22
+looked: 23
+looked: 24
+looked: 25
+looked: 26
+looked: 27
+looked: 28
+looked: 29
+looked: 30
+looked: 31
+looked: 32
+looked: 33
+looked: 34
+Final value: 50.0
+Move: noop
+Explored States: 368911
+noop
+( play 2 1 o )
+
+looked: 35
+looked: 3
+looked: 4
+looked: 5
+looked: 6
+looked: 7
+looked: 8
+looked: 9
+looked: 10
+looked: 11
+looked: 12
+looked: 13
+looked: 14
+looked: 15
+looked: 16
+looked: 17
+looked: 18
+looked: 19
+looked: 20
+looked: 21
+looked: 22
+looked: 23
+looked: 24
+looked: 25
+looked: 26
+looked: 27
+looked: 28
+looked: 29
+looked: 30
+looked: 31
+looked: 32
+looked: 33
+looked: 34
+looked: 35
+looked: 36
+looked: 37
+looked: 38
+looked: 39
+looked: 40
+looked: 41
+looked: 42
+looked: 43
+looked: 44
+looked: 45
+looked: 46
+looked: 47
+looked: 48
+looked: 49
+looked: 50
+looked: 51
+looked: 52
+looked: 53
+looked: 54
+looked: 55
+looked: 56
+looked: 57
+looked: 58
+looked: 59
+looked: 60
+looked: 61
+looked: 62
+looked: 63
+looked: 64
+Final value: 50.0
+Move: ( play 1 5 x )
+Explored States: 368911
+( play 1 5 x )
+noop
+
+looked: 65
+looked: 3
+looked: 4
+looked: 5
+looked: 6
+looked: 7
+looked: 8
+looked: 9
