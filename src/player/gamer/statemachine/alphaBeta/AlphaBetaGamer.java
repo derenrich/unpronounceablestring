@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import player.gamer.statemachine.StateMachineGamer;
-import util.statemachine.CachedStateMachine;
+import util.statemachine.CachedStateMachineNF;
 import util.statemachine.MachineState;
 import util.statemachine.Move;
 import util.statemachine.Role;
@@ -18,7 +18,7 @@ import util.statemachine.implementation.prover.ProverStateMachine;
 public class AlphaBetaGamer extends StateMachineGamer {
 	@Override
 	public StateMachine getInitialStateMachine() {
-		return new CachedStateMachine(new ProverStateMachine());
+		return new CachedStateMachineNF(new ProverStateMachine());
 		//return new ProverStateMachine();
 	}
 	private int initial_search_depth = 3;
@@ -187,6 +187,8 @@ public class AlphaBetaGamer extends StateMachineGamer {
 		} else {
 			float final_value = values.get(this.getCurrentState());
 			System.out.println("Final value: " + final_value);
+			System.out.println("Move: " + moves.get(this.getCurrentState()));
+			System.out.println("Explored States: " + ((CachedStateMachineNF)this.getStateMachine()).getNumberStates());
 			return final_move;
 		}
 	}
