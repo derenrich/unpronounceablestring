@@ -25,8 +25,8 @@ public class AlphaBetaGamer extends StateMachineGamer {
 	MinimaxThread searcher;
 	Thread search_thread;
 	
-	final int HashCapacity = 300000;
-	final int MaxHashSize = 500000;
+	final int HashCapacity = 100000000;
+	final int MaxHashSize = 150000000;
 	
 	@Override
 	public void stateMachineMetaGame(long timeout)
@@ -120,7 +120,7 @@ public class AlphaBetaGamer extends StateMachineGamer {
 						if(Thread.currentThread().isInterrupted()){
 							return;
 						}
-						float state_val = values.get(next_state);
+						float state_val = decorateGoal(values.get(next_state));
 						if (state_val < b){
 							b = state_val;
 						}
