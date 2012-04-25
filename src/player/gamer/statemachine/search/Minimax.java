@@ -22,16 +22,22 @@ public class Minimax extends StateMachineGamer {
 	public StateMachine getInitialStateMachine() {
 		return new ProverStateMachine();
 	}
-	private int search_depth=1;
+	private int initial_search_depth = 4;
+	MinimaxThread searcher;
+	Thread search_thread;
+	
+	final int HashCapacity = 30000;
+	
 	@Override
 	public void stateMachineMetaGame(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
-		search_depth = 4;//estimateDepth(50,4);
-		values = new ConcurrentHashMap<MachineState,Float>();
-		depths = new ConcurrentHashMap<MachineState,Integer>();
-		moves = new ConcurrentHashMap<MachineState,Move>();
-
+		values = new ConcurrentHashMap<MachineState,Float>(HashCapacity);
+		depths = new ConcurrentHashMap<MachineState,Integer>(HashCapacity);
+		moves = new ConcurrentHashMap<MachineState,Move>(HashCapacity);
+		searcher = new MinimaxThread(initial_search_depth);
+		search_thread = new Thread(searcher);
+		search_thread.start();
 	}
 	
 	private int estimateDepth(int trials, int max_depth) throws TransitionDefinitionException, MoveDefinitionException{
@@ -52,6 +58,23 @@ public class Minimax extends StateMachineGamer {
 	private ConcurrentHashMap<MachineState,Move> moves;
 	private ConcurrentHashMap<MachineState,Integer> depths;
 	
+	/*
+	 * Encode extra information in the goal value
+	 * The closer a good goal is monotonically increases the goal
+	 * The closer a bad goal is monotonically decreases the goal
+	 * Does not change the integer value of the goal (only fractional bit)
+	 * Deep thinking was involved here
+	 */
+	private static float decorateGoal(float goal){
+		if (goal < 0.5){
+			return (float) (goal + (0.5 - goal)/4);
+		} else if(goal > 0.5){
+			return (float) (goal + (Math.floor(goal + 0.5) - 0.5f - goal)/4.0) ;
+		} else {
+			return goal;
+		}
+		
+	}
 	public void findMinMax(int depth) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		iterMinMax(depth, this.getCurrentState());		
 	}
@@ -80,7 +103,7 @@ public class Minimax extends StateMachineGamer {
 					for(List<Move> joint_move : sm.getLegalJointMoves(s, this.getRole(), our_move)) {
 						MachineState next_state = sm.getNextState(s, joint_move);
 						iterMinMax(depth - 1, next_state);
-						float state_val = values.get(next_state);
+						float state_val = decorateGoal(values.get(next_state));
 						min_val = Math.min(min_val, state_val);
 					}
 					if(min_val >= max_min_val){
@@ -103,29 +126,36 @@ public class Minimax extends StateMachineGamer {
 		}
 	}
 	
+	
 	@Override
 	public Move stateMachineSelectMove(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
-		MinimaxThread mmt = new MinimaxThread(search_depth);
-	    Thread t = new Thread(mmt);
-	    t.start();
+		
+	    searcher.stop();
+
 	    try {
-			// Thread.sleep(timeout - System.currentTimeMillis());
-	    	Thread.sleep(10*1000);
+		    searcher = new MinimaxThread(initial_search_depth);
+		    search_thread = new Thread(searcher);
+		    search_thread.start();
+			Thread.sleep(timeout - System.currentTimeMillis());
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-	    mmt.stop();
+	    
 		Move final_move = moves.get(this.getCurrentState());
 		float final_value = values.get(this.getCurrentState());
-		System.out.println("Final value: " + final_value);
+
 		if(final_move == null) {
 			System.err.println("Minimax: Failed to get valid move in time. Random play.");			
-			final_move = this.getStateMachine().getRandomMove(this.getCurrentState(), this.getRole());
+			return this.getStateMachine().getRandomMove(this.getCurrentState(), this.getRole());
+		} else {
+			System.out.println("Final value: " + final_value);
+			return final_move;
 		}
-		return final_move;
 	}
+	
+	
     class MinimaxThread implements Runnable {
     	private int depth;
 		private boolean stop = false;
