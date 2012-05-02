@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import player.gamer.statemachine.StateMachineGamer;
+import util.statemachine.CachedStateMachine;
 import util.statemachine.CachedStateMachineNF;
 import util.statemachine.MachineState;
 import util.statemachine.Move;
@@ -18,15 +19,15 @@ import util.statemachine.implementation.prover.ProverStateMachine;
 public class AlphaBetaGamer extends StateMachineGamer {
 	@Override
 	public StateMachine getInitialStateMachine() {
-		return new CachedStateMachineNF(new ProverStateMachine());
+		return new CachedStateMachine(new ProverStateMachine());
 		//return new ProverStateMachine();
 	}
 	private int initial_search_depth = 3;
 	MinimaxThread searcher;
 	Thread search_thread;
 	
-	final int HashCapacity = 100000000;
-	final int MaxHashSize = 150000000;
+	final int HashCapacity = 1500000;
+	final int MaxHashSize = 2000000;
 	
 	@Override
 	public void stateMachineMetaGame(long timeout)
@@ -120,7 +121,7 @@ public class AlphaBetaGamer extends StateMachineGamer {
 						if(Thread.currentThread().isInterrupted()){
 							return;
 						}
-						float state_val = decorateGoal(values.get(next_state));
+						float state_val = values.get(next_state);
 						if (state_val < b){
 							b = state_val;
 						}
@@ -188,7 +189,6 @@ public class AlphaBetaGamer extends StateMachineGamer {
 			float final_value = values.get(this.getCurrentState());
 			System.out.println("Final value: " + final_value);
 			System.out.println("Move: " + moves.get(this.getCurrentState()));
-			System.out.println("Explored States: " + ((CachedStateMachineNF)this.getStateMachine()).getNumberStates());
 			return final_move;
 		}
 	}
