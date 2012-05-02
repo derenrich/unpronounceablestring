@@ -9,12 +9,12 @@ import util.statemachine.StateMachine;
 import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
 
-public class MobilityHeuristic extends Heuristic{
+public class OpponentMobilityHeuristic extends Heuristic{
 	private int depth;
-	MobilityHeuristic(StateMachine sm, Role currentPlayer) {
+	OpponentMobilityHeuristic(StateMachine sm, Role currentPlayer) {
 		this(sm,currentPlayer,0);
 	}
-	MobilityHeuristic(StateMachine sm, Role currentPlayer, int depth) {
+	OpponentMobilityHeuristic(StateMachine sm, Role currentPlayer, int depth) {
 		super(sm, currentPlayer);
 		this.depth = depth;
 	}
@@ -26,8 +26,10 @@ public class MobilityHeuristic extends Heuristic{
 	
 	float getScore(MachineState s, int d) throws MoveDefinitionException, TransitionDefinitionException {
 		if(d >= this.depth) {
-			List<Move> our_moves = sm.getLegalMoves(s, this.ourPlayer);
-			return our_moves.size();
+			List<Role> opposing_roles = sm.getRoles();
+			opposing_roles.remove(this.ourPlayer);
+			List<List<Move>> their_moves = sm.getLegalJointMoves(s, opposing_roles);
+			return their_moves.size();
 		} else {
 			float sum = 0f;
 				for(List<Move> joint_move : sm.getLegalJointMoves(s)) {

@@ -9,19 +9,19 @@ import util.statemachine.StateMachine;
 import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
 
-public class MobilityHeuristic extends Heuristic{
+public class FocusHeuristic extends Heuristic{
 	private int depth;
-	MobilityHeuristic(StateMachine sm, Role currentPlayer) {
+	FocusHeuristic(StateMachine sm, Role currentPlayer) {
 		this(sm,currentPlayer,0);
 	}
-	MobilityHeuristic(StateMachine sm, Role currentPlayer, int depth) {
+	FocusHeuristic(StateMachine sm, Role currentPlayer, int depth) {
 		super(sm, currentPlayer);
 		this.depth = depth;
 	}
 
 	@Override
 	float getScore(MachineState s) throws MoveDefinitionException, TransitionDefinitionException {
-		return 1-1/getScore(s, 0);
+		return 1/getScore(s, 0);
 	}
 	
 	float getScore(MachineState s, int d) throws MoveDefinitionException, TransitionDefinitionException {
