@@ -11,10 +11,10 @@ import util.statemachine.exceptions.TransitionDefinitionException;
 
 public class FocusHeuristic extends Heuristic{
 	private int depth;
-	FocusHeuristic(StateMachine sm, Role currentPlayer) {
+	public FocusHeuristic(StateMachine sm, Role currentPlayer) {
 		this(sm,currentPlayer,0);
 	}
-	FocusHeuristic(StateMachine sm, Role currentPlayer, int depth) {
+	public FocusHeuristic(StateMachine sm, Role currentPlayer, int depth) {
 		super(sm, currentPlayer);
 		this.depth = depth;
 	}

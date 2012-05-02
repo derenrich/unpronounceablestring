@@ -9,7 +9,7 @@ import util.statemachine.exceptions.TransitionDefinitionException;
 public abstract class Heuristic {
 	protected StateMachine sm;
 	protected Role ourPlayer;
-	Heuristic(StateMachine sm, Role ourPlayer) {
+	public Heuristic(StateMachine sm, Role ourPlayer) {
 		this.sm = sm;
 		this.ourPlayer = ourPlayer;
 	}
