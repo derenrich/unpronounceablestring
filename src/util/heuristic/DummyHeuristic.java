@@ -1,12 +1,13 @@
 package util.heuristic;
 
 import util.statemachine.MachineState;
+import util.statemachine.Role;
 import util.statemachine.StateMachine;
 
 public class DummyHeuristic extends Heuristic{
 
-	DummyHeuristic(StateMachine sm) {
-		super(sm);
+	DummyHeuristic(StateMachine sm, Role ourPlayer) {
+		super(sm, ourPlayer);
 		// TODO Auto-generated constructor stub
 	}
 
