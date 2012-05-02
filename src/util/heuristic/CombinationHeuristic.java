@@ -16,7 +16,7 @@ private float[] weights;
 		weights = ws;
 	}
 	@Override
-	float getScore(MachineState s) throws MoveDefinitionException,
+	public float getScore(MachineState s) throws MoveDefinitionException,
 			TransitionDefinitionException {
 		float score = 0;
 		float total = 0;
@@ -28,7 +28,7 @@ private float[] weights;
 	}
 
 	@Override
-	String getName() {
+	public String getName() {
 		return "Combination Heuristic";
 	}
 

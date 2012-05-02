@@ -20,7 +20,7 @@ public class MobilityHeuristic extends Heuristic{
 	}
 
 	@Override
-	float getScore(MachineState s) throws MoveDefinitionException, TransitionDefinitionException {
+	public float getScore(MachineState s) throws MoveDefinitionException, TransitionDefinitionException {
 		return 1-1/getScore(s, 0);
 	}
 	
@@ -42,7 +42,7 @@ public class MobilityHeuristic extends Heuristic{
 	}
 
 	@Override
-	String getName() {
+	public String getName() {
 		return "Mobility Heuristic";
 	}
 

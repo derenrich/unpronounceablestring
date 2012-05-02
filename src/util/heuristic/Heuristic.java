@@ -15,6 +15,7 @@ public abstract class Heuristic {
 	}
 	/* must be between 0 and 1 */
 	public abstract float getScore(MachineState s) throws MoveDefinitionException, TransitionDefinitionException;
+	public abstract String getName();
 
 
 }

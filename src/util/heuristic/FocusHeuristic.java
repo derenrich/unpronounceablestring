@@ -20,7 +20,7 @@ public class FocusHeuristic extends Heuristic{
 	}
 
 	@Override
-	float getScore(MachineState s) throws MoveDefinitionException, TransitionDefinitionException {
+	public float getScore(MachineState s) throws MoveDefinitionException, TransitionDefinitionException {
 		return 1/getScore(s, 0);
 	}
 	
@@ -42,7 +42,7 @@ public class FocusHeuristic extends Heuristic{
 	}
 
 	@Override
-	String getName() {
+	public String getName() {
 		return "Focus Heuristic";
 	}
 
