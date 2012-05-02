@@ -43,7 +43,7 @@ public class FocusHeuristic extends Heuristic{
 
 	@Override
 	String getName() {
-		return "Mobility Heuristic";
+		return "Focus Heuristic";
 	}
 
 }

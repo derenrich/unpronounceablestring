@@ -45,7 +45,7 @@ public class OpponentMobilityHeuristic extends Heuristic{
 
 	@Override
 	String getName() {
-		return "Mobility Heuristic";
+		return "Opponent Mobility Heuristic";
 	}
 
 }
