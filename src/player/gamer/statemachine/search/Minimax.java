@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import player.gamer.statemachine.StateMachineGamer;
 import util.statemachine.CachedStateMachine;
+import util.statemachine.CachedStateMachineNF;
 import util.statemachine.MachineState;
 import util.statemachine.Move;
 import util.statemachine.Role;
@@ -18,8 +19,7 @@ import util.statemachine.implementation.prover.ProverStateMachine;
 public class Minimax extends StateMachineGamer {
 	@Override
 	public StateMachine getInitialStateMachine() {
-		return new CachedStateMachine(new ProverStateMachine());
-		//return new ProverStateMachine();
+		return new ProverStateMachine();
 	}
 	private int initial_search_depth = 3;
 	MinimaxThread searcher;
