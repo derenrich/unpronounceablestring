@@ -3,18 +3,18 @@ package util.heuristic;
 public class Score implements Comparable<Score>{
 	public float stateScore = -1f;
 	public float heuristicScore = -1f;
-	
-	void setHeuristicScore(float score){
-		heuristicScore = score;
-	}
-	void setStateScore(float score){
-		stateScore = score;
-	}
+	public int depth = -1;
 	
 	@Override
 	public int compareTo(Score s2) {
 		if (stateScore >= 0f && s2.stateScore >= 0f){
-			return Float.compare(stateScore, s2.stateScore);			
+			if (stateScore == s2.stateScore){
+				if(depth == s2.depth) {
+					return 0;
+				} else return depth > s2.depth ? 1 : -1; 
+			} else {
+				return Float.compare(stateScore, s2.stateScore);
+			}
 		} else if (s2.stateScore == -1f) {
 			if( stateScore > 0f ){ 
 				return 1;
@@ -28,7 +28,11 @@ public class Score implements Comparable<Score>{
 				return 1;
 			}
 		} else {
-			return Float.compare(heuristicScore, s2.heuristicScore);			
+			if(heuristicScore == s2.heuristicScore){
+				if(depth == s2.depth) {
+					return 0;
+				} else return depth > s2.depth ? 1 : -1;
+			} else return Float.compare(heuristicScore, s2.heuristicScore);			
 		}
 		// we will not get here
 		assert(false);
