@@ -6,7 +6,7 @@ import util.statemachine.StateMachine;
 
 public class DummyHeuristic extends Heuristic{
 
-	DummyHeuristic(StateMachine sm, Role ourPlayer) {
+	public DummyHeuristic(StateMachine sm, Role ourPlayer) {
 		super(sm, ourPlayer);
 	}
 

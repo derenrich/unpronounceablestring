@@ -11,10 +11,10 @@ import util.statemachine.exceptions.TransitionDefinitionException;
 
 public class MobilityHeuristic extends Heuristic{
 	private int depth;
-	MobilityHeuristic(StateMachine sm, Role currentPlayer) {
+	public MobilityHeuristic(StateMachine sm, Role currentPlayer) {
 		this(sm,currentPlayer,0);
 	}
-	MobilityHeuristic(StateMachine sm, Role currentPlayer, int depth) {
+	public MobilityHeuristic(StateMachine sm, Role currentPlayer, int depth) {
 		super(sm, currentPlayer);
 		this.depth = depth;
 	}

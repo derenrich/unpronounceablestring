@@ -8,6 +8,10 @@ import player.gamer.statemachine.StateMachineGamer;
 import util.heuristic.DepthCharge;
 import util.heuristic.DummyHeuristic;
 import util.heuristic.Heuristic;
+import util.heuristic.MobilityHeuristic;
+import util.heuristic.FocusHeuristic;
+import util.heuristic.OpponentFocusHeuristic;
+import util.heuristic.OpponentMobilityHeuristic;
 import util.heuristic.Score;
 import util.statemachine.CachedStateMachine;
 import util.statemachine.MachineState;
@@ -38,11 +42,13 @@ public class HeuristicSearch extends StateMachineGamer {
 		values = new ConcurrentHashMap<MachineState,Score>(HashCapacity);
 		depths = new ConcurrentHashMap<MachineState,Integer>(HashCapacity);
 		moves = new ConcurrentHashMap<MachineState,Move>(HashCapacity);
+
 		if(this.getStateMachine() instanceof CachedStateMachine){
 			h = new DepthCharge(((CachedStateMachine)this.getStateMachine()).sm, this.getRole());
 		} else {
 			h = new DepthCharge(this.getStateMachine(), this.getRole());			
 		}
+
 	    try {
 		    searcher = new MinimaxThread(initial_search_depth);
 		    search_thread = new Thread(searcher);
