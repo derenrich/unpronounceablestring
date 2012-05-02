@@ -9,6 +9,6 @@ public abstract class Heuristic {
 		this.sm = sm;
 	}
 	/* must be between 0 and 1 */
-	abstract float getScore(MachineState s);
-	abstract String getName();
+	public abstract float getScore(MachineState s);
+	public abstract String getName();
 }

@@ -5,19 +5,18 @@ import util.statemachine.StateMachine;
 
 public class DummyHeuristic extends Heuristic{
 
-	DummyHeuristic(StateMachine sm) {
+	public DummyHeuristic(StateMachine sm) {
 		super(sm);
-		// TODO Auto-generated constructor stub
 	}
 
 	@Override
-	float getScore(MachineState s) {
+	public float getScore(MachineState s) {
 		// TODO Auto-generated method stub
 		return .5f;
 	}
 
 	@Override
-	String getName() {
+	public String getName() {
 		// TODO Auto-generated method stub
 		return "Dummy Heuristic";
 	}

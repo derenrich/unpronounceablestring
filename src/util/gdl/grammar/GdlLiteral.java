@@ -12,6 +12,8 @@ public abstract class GdlLiteral extends Gdl
 	@Override
 	public abstract String toString();
 
+	
+	
 	@Override
 	public abstract GdlLiteral replace(Map<Gdl, Gdl> replacementMap);
 	
