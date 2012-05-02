@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import player.gamer.statemachine.StateMachineGamer;
+import util.heuristic.DepthCharge;
 import util.heuristic.DummyHeuristic;
 import util.heuristic.Heuristic;
 import util.heuristic.Score;
@@ -24,7 +25,7 @@ public class HeuristicSearch extends StateMachineGamer {
 		return new CachedStateMachine(new ProverStateMachine());
 	}
 	Heuristic h;
-	private int initial_search_depth = 3;
+	private int initial_search_depth = 2;
 	MinimaxThread searcher;
 	Thread search_thread;
 	final int HashCapacity = 1500000;
@@ -37,7 +38,11 @@ public class HeuristicSearch extends StateMachineGamer {
 		values = new ConcurrentHashMap<MachineState,Score>(HashCapacity);
 		depths = new ConcurrentHashMap<MachineState,Integer>(HashCapacity);
 		moves = new ConcurrentHashMap<MachineState,Move>(HashCapacity);
-		h = new DummyHeuristic(this.getStateMachine());
+		if(this.getStateMachine() instanceof CachedStateMachine){
+			h = new DepthCharge(((CachedStateMachine)this.getStateMachine()).sm, this.getRole());
+		} else {
+			h = new DepthCharge(this.getStateMachine(), this.getRole());			
+		}
 	    try {
 		    searcher = new MinimaxThread(initial_search_depth);
 		    search_thread = new Thread(searcher);
@@ -52,23 +57,6 @@ public class HeuristicSearch extends StateMachineGamer {
 	private ConcurrentHashMap<MachineState,Score> values;
 	private ConcurrentHashMap<MachineState,Move> moves;
 	private ConcurrentHashMap<MachineState,Integer> depths;
-	
-	/*
-	 * Encode extra information in the goal value
-	 * The closer a good goal is monotonically increases the goal
-	 * The closer a bad goal is monotonically decreases the goal
-	 * Does not change the integer value of the goal (only fractional bit)
-	 * Deep thinking was involved here
-	 */
-	private static float decorateGoal(float goal){
-		if (goal < 0.5){
-			return (float) (goal + (0.5 - goal)/4);
-		} else if(goal > 0.5){
-			return (float) (goal + (Math.floor(goal + 0.5) - 0.5f - goal)/4.0) ;
-		} else {
-			return goal;
-		}
-	}
 	
 	public void findMinMax(int depth) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		Score alpha = new Score();
@@ -187,7 +175,7 @@ public class HeuristicSearch extends StateMachineGamer {
 		Move final_move = moves.get(this.getCurrentState());
 		
 		if(final_move == null) {
-			System.err.println("Minimax: Failed to get valid move in time. Random play.");			
+			System.err.println(this.getClass() + ": Failed to get valid move in time. Random play.");			
 			return this.getStateMachine().getRandomMove(this.getCurrentState(), this.getRole());
 		} else {
 			Score final_value = values.get(this.getCurrentState());

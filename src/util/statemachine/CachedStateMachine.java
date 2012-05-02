@@ -10,7 +10,7 @@ import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
 
 public class CachedStateMachine extends StateMachine {
-	StateMachine sm;
+	public StateMachine sm;
 	ConcurrentLRUCache<MachineState,Boolean> terminalCache;
 	ConcurrentLRUCache<StateMovesPair,MachineState> nextCache;
 	ConcurrentLRUCache<StateRolePair,List<Move>> legalCache;
@@ -121,6 +121,7 @@ public class CachedStateMachine extends StateMachine {
 			return state.equals(smp.state) && moves.equals(smp.moves) ;
 		}
 	}
+	
 	@Override
 	public MachineState getNextState(MachineState state, List<Move> moves)
 			throws TransitionDefinitionException {

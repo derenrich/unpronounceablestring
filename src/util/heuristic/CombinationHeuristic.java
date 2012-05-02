@@ -3,6 +3,7 @@ package util.heuristic;
 import util.statemachine.MachineState;
 import util.statemachine.Role;
 import util.statemachine.StateMachine;
+import util.statemachine.exceptions.GoalDefinitionException;
 import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
 
@@ -17,7 +18,7 @@ private float[] weights;
 	}
 	@Override
 	public float getScore(MachineState s) throws MoveDefinitionException,
-			TransitionDefinitionException {
+			TransitionDefinitionException, GoalDefinitionException {
 		float score = 0;
 		float total = 0;
 		for( int i=0; i<heuristics.length;i++) {
