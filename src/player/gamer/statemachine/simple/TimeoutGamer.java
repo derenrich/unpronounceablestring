@@ -28,7 +28,7 @@ public class TimeoutGamer extends StateMachineGamer {
 			GoalDefinitionException {
 		// TODO Auto-generated method stub
 		try {
-			Thread.sleep(500+ (timeout - System.currentTimeMillis()));
+			Thread.sleep(5000 + (timeout - System.currentTimeMillis()));
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -46,6 +46,10 @@ public class TimeoutGamer extends StateMachineGamer {
 	public void stateMachineAbort() {
 		// TODO Auto-generated method stub
 
+	}
+	@Override
+	public String getName() {
+		return "TimeoutGamer";
 	}
 
 }
