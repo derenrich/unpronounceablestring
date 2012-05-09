@@ -249,4 +249,12 @@ public abstract class StateMachine
             theDepth[0] = nDepth;
         return state;
     }    
+    public MachineState performRememberingDepthCharge(MachineState state, ArrayList<MachineState> history) throws TransitionDefinitionException, MoveDefinitionException {
+    	history.add(state);
+        while(!isTerminal(state)) {
+            state = getNextState(state, getRandomJointMove(state));
+            history.add(state);
+        }
+        return state;
+    }    
 }
