@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import player.gamer.statemachine.StateMachineGamer;
+import util.heuristic.CombinationHeuristic;
 import util.heuristic.DepthCharge;
 import util.heuristic.DummyHeuristic;
 import util.heuristic.Heuristic;
@@ -42,12 +43,23 @@ public class HeuristicSearch extends StateMachineGamer {
 		values = new ConcurrentHashMap<MachineState,Score>(HashCapacity);
 		depths = new ConcurrentHashMap<MachineState,Integer>(HashCapacity);
 		moves = new ConcurrentHashMap<MachineState,Move>(HashCapacity);
+		Heuristic[] hs = new Heuristic[5];
 
-		if(this.getStateMachine() instanceof CachedStateMachine){
-			h = new DepthCharge(((CachedStateMachine)this.getStateMachine()).sm, this.getRole());
-		} else {
-			h = new DepthCharge(this.getStateMachine(), this.getRole());			
-		}
+		/*if(this.getStateMachine() instanceof CachedStateMachine){
+			hs[0] = new DummyHeuristic(((CachedStateMachine)this.getStateMachine()).sm, this.getRole());
+			hs[1] = new MobilityHeuristic(((CachedStateMachine)this.getStateMachine()).sm, this.getRole());
+			hs[2] = new FocusHeuristic(((CachedStateMachine)this.getStateMachine()).sm, this.getRole());
+			hs[3] = new OpponentFocusHeuristic(((CachedStateMachine)this.getStateMachine()).sm, this.getRole());
+			hs[4] = new OpponentMobilityHeuristic(((CachedStateMachine)this.getStateMachine()).sm, this.getRole());
+			h = new CombinationHeuristic(((CachedStateMachine)this.getStateMachine()).sm, this.getRole(),hs);
+		} else {*/
+			hs[0] = new DummyHeuristic(this.getStateMachine(), this.getRole());
+			hs[1] = new MobilityHeuristic(this.getStateMachine(), this.getRole(),1);
+			hs[2] = new FocusHeuristic(this.getStateMachine(), this.getRole(),1);
+			hs[3] = new OpponentFocusHeuristic(this.getStateMachine(), this.getRole(),1);
+			hs[4] = new OpponentMobilityHeuristic(this.getStateMachine(), this.getRole(),1);
+			h = new CombinationHeuristic(this.getStateMachine(), this.getRole(),hs);
+		//}
 
 	    try {
 		    searcher = new MinimaxThread(initial_search_depth);
