@@ -1,5 +1,6 @@
 package util.heuristic;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import util.statemachine.MachineState;
@@ -26,7 +27,7 @@ public class OpponentMobilityHeuristic extends Heuristic{
 	
 	float getScore(MachineState s, int d) throws MoveDefinitionException, TransitionDefinitionException {
 		if(d >= this.depth) {
-			List<Role> opposing_roles = sm.getRoles();
+			List<Role> opposing_roles = new ArrayList<Role>(sm.getRoles());
 			opposing_roles.remove(this.ourPlayer);
 			List<List<Move>> their_moves = sm.getLegalJointMoves(s, opposing_roles);
 			return their_moves.size();
