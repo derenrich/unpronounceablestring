@@ -1,7 +1,9 @@
 package player.gamer.statemachine.search;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import player.gamer.statemachine.StateMachineGamer;
@@ -14,6 +16,7 @@ import util.heuristic.FocusHeuristic;
 import util.heuristic.OpponentFocusHeuristic;
 import util.heuristic.OpponentMobilityHeuristic;
 import util.heuristic.Score;
+import util.metagaming.EndBook;
 import util.statemachine.CachedStateMachine;
 import util.statemachine.MachineState;
 import util.statemachine.Move;
@@ -24,60 +27,61 @@ import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
 import util.statemachine.implementation.prover.ProverStateMachine;
 
-public class HeuristicSearch extends StateMachineGamer {
+public class SuperSearch extends StateMachineGamer {
+	
+	CachedStateMachine cachedStateMachine;
+	
 	@Override
 	public StateMachine getInitialStateMachine() {
-		return new CachedStateMachine(new ProverStateMachine());
+		cachedStateMachine = new CachedStateMachine(new ProverStateMachine());
+		return (StateMachine) cachedStateMachine;
 	}
 	Heuristic h;
 	private int initial_search_depth = 2;
 	MinimaxThread searcher;
 	Thread search_thread;
-	final int HashCapacity = 1500000;
-	final int MaxHashSize = 2000000;
+	private ConcurrentHashMap<MachineState,Score> values;
+	private ConcurrentHashMap<MachineState,Move> moves;
+	final int HashCapacity = 10000000;
+	final int MaxHashSize = 15000000;
+	
+	private Set<MachineState> wins;
+	private Set<MachineState> losses;
 	
 	@Override
 	public void stateMachineMetaGame(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
 		values = new ConcurrentHashMap<MachineState,Score>(HashCapacity);
-		depths = new ConcurrentHashMap<MachineState,Integer>(HashCapacity);
 		moves = new ConcurrentHashMap<MachineState,Move>(HashCapacity);
-
-		StateMachine heuristicStateMachine;
-		if(this.getStateMachine() instanceof CachedStateMachine){
-			heuristicStateMachine = ((CachedStateMachine)this.getStateMachine()).sm;
-		} else {
-			heuristicStateMachine = this.getStateMachine();
-		}
-		Heuristic h1 = new DepthCharge(heuristicStateMachine, this.getRole());
-		Heuristic h2 = new MobilityHeuristic(heuristicStateMachine, this.getRole());
-		Heuristic[] hs = {h1,h2};
-		float[] weights = {0.5f,0.5f};
-		h = new CombinationHeuristic(heuristicStateMachine, this.getRole(),hs,weights);
-	    try {
+		//h = new DepthCharge(cachedStateMachine, this.getRole());
+		h = new DummyHeuristic(cachedStateMachine, this.getRole());		
+		EndBook book = new EndBook();
+		wins = Collections.newSetFromMap(new ConcurrentHashMap<MachineState,Boolean>(20000));
+		losses = Collections.newSetFromMap(new ConcurrentHashMap<MachineState,Boolean>(20000));				
+		try {
+			System.out.println("Generating endgame book");			
+			book.generateBook(this.getCurrentState(), cachedStateMachine, this.getRole(), timeout, wins, losses);
+			book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
+			System.out.println("Generated an endgame book of size: " + (wins.size() + losses.size()));			
 		    searcher = new MinimaxThread(initial_search_depth);
 		    search_thread = new Thread(searcher);
 		    search_thread.start();
-			Thread.sleep(timeout - System.currentTimeMillis());
+			//Thread.sleep(timeout - System.currentTimeMillis());
 		    searcher.stop();
 		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 			e.printStackTrace();
 		}		
-	}	
-
-	private ConcurrentHashMap<MachineState,Score> values;
-	private ConcurrentHashMap<MachineState,Move> moves;
-	private ConcurrentHashMap<MachineState,Integer> depths;
-	
+	}		
 	public void findMinMax(int depth) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		Score alpha = new Score();
 		alpha.heuristicScore = 0;
 		alpha.stateScore = 0;
-		alpha.depth = 1;
+		alpha.depth = 0;
 		Score beta = new Score();
 		beta.heuristicScore = 2;
-		beta.stateScore = 200 + game_depth;
+		beta.stateScore = 200;
 		beta.depth = 0;		
 		iterMinMax(depth, 0, this.getCurrentState(), alpha , beta);		
 	}
@@ -85,26 +89,35 @@ public class HeuristicSearch extends StateMachineGamer {
 	// we prefer incomplete to getting nothing but prefer getting something to it
 	private void iterMinMax(int max_depth, int depth, MachineState s, Score alpha, Score beta) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		StateMachine sm = this.getStateMachine();
-		// have we done this before?
-		if(!depths.containsKey(s) || depths.get(s) < max_depth - depth){
+		// have we not done this before?
+		// have we done it before but worse? 
+		if(!values.containsKey(s) || values.get(s).depth < game_depth + max_depth){
 			// are we at the base-case?
 			if(sm.isTerminal(s)){
 				Score score = new Score();
 				score.stateScore = getGoal(s);	
 				score.depth = game_depth + depth;
 				values.put(s, score);
-				depths.put(s, max_depth - depth);
-			} else if(depth >= max_depth){			
+			} else if (wins.contains(s)) {
+				Score score = new Score();
+				score.stateScore = 100; // this is a hack, should be the actual value
+				score.depth = game_depth + depth;
+				values.put(s, score);		
+			} else if (losses.contains(s)) {
+				Score score = new Score();
+				score.stateScore = 0;		
+				score.depth = game_depth + depth;
+				values.put(s, score);		
+			} else if(depth >= max_depth){
 				Score score = new Score();
 				score.heuristicScore = h.getScore(s);		
 				score.depth = game_depth + depth;
 				values.put(s, score);
-				depths.put(s, max_depth - depth);
 			} else {
 				List<Move> our_moves = sm.getLegalMoves(s, this.getRole());
 				List<Role> opposing_roles = new ArrayList<Role>(sm.getRoles());
 				opposing_roles.remove(this.getRole());				
-				Move best_move = null;			
+				Move best_move = null;
 				for(Move our_move : our_moves) {
 					List<List<Move>> joint_moves = sm.getLegalJointMoves(s, this.getRole(), our_move);
 					Score a = alpha;
@@ -113,6 +126,7 @@ public class HeuristicSearch extends StateMachineGamer {
 					for(List<Move> joint_move : joint_moves) {
 						MachineState next_state = sm.getNextState(s, joint_move);
 						if(next_state == null){
+							System.out.println("Error: Next state is null");
 							// error in the GDL
 							continue;
 						}
@@ -139,7 +153,6 @@ public class HeuristicSearch extends StateMachineGamer {
 					}
 				}
 				values.put(s, alpha);
-				depths.put(s, depth);
 				if(best_move != null){
 					moves.put(s, best_move);
 				} else {
@@ -162,16 +175,17 @@ public class HeuristicSearch extends StateMachineGamer {
 	public Move stateMachineSelectMove(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
+		System.out.println("Book size: "+ (wins.size()+losses.size()));
+	    searcher.stop();
+		search_thread.interrupt();
 		if(!first_move){
 			game_depth += 1;
 		} 
 		first_move = false;
-	    searcher.stop();
-		search_thread.interrupt();
+		
 		// check if we should blow away our caches
 		if(values.size() > this.MaxHashSize) {			
 			values = new ConcurrentHashMap<MachineState,Score>(HashCapacity);
-			depths = new ConcurrentHashMap<MachineState,Integer>(HashCapacity);
 			moves = new ConcurrentHashMap<MachineState,Move>(HashCapacity);
 		}
 	    try {
@@ -179,7 +193,7 @@ public class HeuristicSearch extends StateMachineGamer {
 		    search_thread = new Thread(searcher);
 		    search_thread.start();
 			Thread.sleep(timeout - System.currentTimeMillis());
-			System.out.println("Overslept by: " + ( System.currentTimeMillis() - timeout));
+			System.out.println("Overslept by: " + (timeout - System.currentTimeMillis()));
 		    searcher.stop();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -201,7 +215,7 @@ public class HeuristicSearch extends StateMachineGamer {
 	
     class MinimaxThread implements Runnable {
     	private int depth;
-		private boolean stop = false;
+		private volatile boolean stop = false;
     	MinimaxThread(int depth){
     		this.depth = depth;
     	}
@@ -240,8 +254,9 @@ public class HeuristicSearch extends StateMachineGamer {
 	    searcher.stop();
 		search_thread.interrupt();
 	}
+	
 	@Override
 	public String getName() {
-		return "HeuristicSearch";
+		return "SuperSearch";
 	}
 }

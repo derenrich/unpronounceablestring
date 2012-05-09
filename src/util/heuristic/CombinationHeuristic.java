@@ -8,8 +8,8 @@ import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
 
 public class CombinationHeuristic extends Heuristic{
-private Heuristic[] heuristics;
-private float[] weights;
+	private Heuristic[] heuristics;
+	private float[] weights;
 	public CombinationHeuristic(StateMachine sm, Role ourPlayer, Heuristic[] hs, float[] ws) {
 		super(sm, ourPlayer);
 		assert(hs.length == ws.length);

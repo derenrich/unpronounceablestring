@@ -18,23 +18,24 @@ public class CachedStateMachine extends StateMachine {
 	public CachedStateMachine(StateMachine sm){
 		this.sm = sm;
 		
-		terminalCache = new ConcurrentLRUCache<MachineState, Boolean>(3000000, /* maximum size */
-											   1000000, /* desired minimum size */
-											   2000000, /* acceptable size */
-											   1000000, /* initial size */
+		terminalCache = new ConcurrentLRUCache<MachineState, Boolean>(10000000, /* maximum size */
+											   9000000, /* desired minimum size */
+											   9000000, /* acceptable size */
+											   8000000, /* initial size */
 											   true,
 						     				   true);
 											   
-		nextCache = new ConcurrentLRUCache<StateMovesPair, MachineState>(3000000, /* maximum size */
-				   1000000, /* desired minimum size */
-				   2000000, /* acceptable size */
-				   1000000, /* initial size */
+		nextCache = new ConcurrentLRUCache<StateMovesPair, MachineState>(10000000, /* maximum size */
+				   9000000, /* desired minimum size */
+				   9000000, /* acceptable size */
+				   8000000, /* initial size */
 				   true,
 				   true);
-		legalCache = new ConcurrentLRUCache<StateRolePair,List<Move>>(3000000, /* maximum size */
-				   1000000, /* desired minimum size */
-				   2000000, /* acceptable size */
-				   1000000, /* initial size */
+		
+		legalCache = new ConcurrentLRUCache<StateRolePair,List<Move>>(10000000, /* maximum size */
+				   9000000, /* desired minimum size */
+				   9000000, /* acceptable size */
+				   8000000, /* initial size */
 				   true,
 				   true);
 		

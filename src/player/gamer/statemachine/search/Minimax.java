@@ -126,12 +126,12 @@ public class Minimax extends StateMachineGamer {
 							break;
 						}
 					}
-					if(min_val >= max_min_val){
+					if(min_val >= max_min_val) {
 						max_min_val = min_val;
 						best_move = our_move;
 					}
 					// hacky alpha beta
-					if(max_min_val > 99){
+					if(max_min_val > 99) {
 						break;
 					}
 				}
