@@ -66,10 +66,13 @@ final float decay_rate = .6f;
 				for (int j = history.size()-2; j >= 0; j--) {
 					float[] scores = new float[weights.length];
 					float sum = 0;
+					// Precompute important values
 					for(int w=0; w<weights.length; w++) {
 						scores[w] = heuristics[w].getScore(history.get(j));
 						sum += scores[w] * weights[w];
 					}
+					
+					// Update weights via gradient descent
 					for(int w=0; w<weights.length; w++) {
 						weights[w] = weights[w] - eta*2*(sum-goal)*scores[w];
 					}
