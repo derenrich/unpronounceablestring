@@ -5,8 +5,8 @@ require 'pp'
 
 
 fwds = [
-        ['127.0.0.1',9147]#,
-        #['127.0.0.1',9148]
+        ['127.0.0.1',9147],
+        ['127.0.0.1',9148]
        ]
 
 responses = Array.new(fwds.size)
@@ -14,6 +14,7 @@ start = true
 start_clock = 0
 play_clock = 0
 threads = []
+sockets = []
 NET_DELAY = 1
 
 server = TCPServer.new(9145)  
@@ -80,7 +81,8 @@ loop {
       end
     }
   end
-  client.puts(responses[0])
+  client.print(responses[0])
+  client.close
   if responses[0].size == 0
     puts "Move error"
   else

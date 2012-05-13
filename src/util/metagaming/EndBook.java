@@ -18,7 +18,7 @@ public class EndBook {
 	volatile MachineState start;
 	StateMachine sm;
 	Role r;
-	final int THREAD_COUNT = 4;
+	final int THREAD_COUNT = 3;
 
 	/* State must be concurrent see Collections.newSetFromMap(new ConcurrentHashMap<Object,Boolean>()) */
 	public void generateBook(MachineState s, StateMachine sm, Role r, long timeout, Set<MachineState> wins, Set<MachineState> losses) throws InterruptedException {

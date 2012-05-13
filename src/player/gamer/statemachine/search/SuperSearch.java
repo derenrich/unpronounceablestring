@@ -54,26 +54,34 @@ public class SuperSearch extends StateMachineGamer {
 			GoalDefinitionException {
 		values = new ConcurrentHashMap<MachineState,Score>(HashCapacity);
 		moves = new ConcurrentHashMap<MachineState,Move>(HashCapacity);
-		//h = new DepthCharge(cachedStateMachine, this.getRole());
-		h = new DummyHeuristic(cachedStateMachine, this.getRole());		
+		
+		Heuristic[] hs = new Heuristic[2];
+		hs[0] = new MobilityHeuristic(this.getStateMachine(), this.getRole(), 1);
+		hs[1] = new OpponentFocusHeuristic(this.getStateMachine(), this.getRole(), 1);
+		float[] weights = {0.4f, 0.6f};
+		h = new CombinationHeuristic(this.getStateMachine(), this.getRole(), hs, weights);
+
 		EndBook book = new EndBook();
-		wins = Collections.newSetFromMap(new ConcurrentHashMap<MachineState,Boolean>(20000));
-		losses = Collections.newSetFromMap(new ConcurrentHashMap<MachineState,Boolean>(20000));				
+		wins = Collections.newSetFromMap(new ConcurrentHashMap<MachineState,Boolean>(1000000));
+		losses = Collections.newSetFromMap(new ConcurrentHashMap<MachineState,Boolean>(1000000));
+		
 		try {
-			System.out.println("Generating endgame book");			
-			book.generateBook(this.getCurrentState(), cachedStateMachine, this.getRole(), timeout, wins, losses);
-			book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
-			System.out.println("Generated an endgame book of size: " + (wins.size() + losses.size()));			
+			System.out.println("Spawning headstart search");
 		    searcher = new MinimaxThread(initial_search_depth);
 		    search_thread = new Thread(searcher);
 		    search_thread.start();
-			//Thread.sleep(timeout - System.currentTimeMillis());
-		    searcher.stop();
+			System.out.println("Generating endgame book");
+			book.generateBook(this.getCurrentState(), cachedStateMachine, this.getRole(), timeout, wins, losses);
+			// spawn 2 book threads
+			System.out.println("Generated an endgame book of size: " + (wins.size() + losses.size()));
+			book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
+			book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
+			book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			e.printStackTrace();
 		}		
-	}		
+	}			
 	public void findMinMax(int depth) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		Score alpha = new Score();
 		alpha.heuristicScore = 0;
@@ -88,6 +96,10 @@ public class SuperSearch extends StateMachineGamer {
 	
 	// we prefer incomplete to getting nothing but prefer getting something to it
 	private void iterMinMax(int max_depth, int depth, MachineState s, Score alpha, Score beta) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
+		// did we run out of time?
+		if(Thread.currentThread().isInterrupted()){
+			return;
+		}
 		StateMachine sm = this.getStateMachine();
 		// have we not done this before?
 		// have we done it before but worse? 
@@ -100,9 +112,9 @@ public class SuperSearch extends StateMachineGamer {
 				values.put(s, score);
 			} else if (wins.contains(s)) {
 				Score score = new Score();
-				score.stateScore = 100; // this is a hack, should be the actual value
+				score.stateScore = 1; // this is a hack, should be the actual value
 				score.depth = game_depth + depth;
-				values.put(s, score);		
+				values.put(s, score);	
 			} else if (losses.contains(s)) {
 				Score score = new Score();
 				score.stateScore = 0;		
@@ -175,6 +187,8 @@ public class SuperSearch extends StateMachineGamer {
 	public Move stateMachineSelectMove(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
+		// penalize ourselves an additional 50ms to get things out on time
+		timeout -= 50;
 		System.out.println("Book size: "+ (wins.size()+losses.size()));
 	    searcher.stop();
 		search_thread.interrupt();
@@ -193,14 +207,12 @@ public class SuperSearch extends StateMachineGamer {
 		    search_thread = new Thread(searcher);
 		    search_thread.start();
 			Thread.sleep(timeout - System.currentTimeMillis());
-			System.out.println("Overslept by: " + (timeout - System.currentTimeMillis()));
+			System.out.println("Overslept by: " + (System.currentTimeMillis() - timeout));
 		    searcher.stop();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-	    
 		Move final_move = moves.get(this.getCurrentState());
-		
 		if(final_move == null) {
 			System.err.println(this.getClass() + ": Failed to get valid move in time. Random play.");			
 			return this.getStateMachine().getRandomMove(this.getCurrentState(), this.getRole());
@@ -211,7 +223,6 @@ public class SuperSearch extends StateMachineGamer {
 			return final_move;
 		}
 	}
-	
 	
     class MinimaxThread implements Runnable {
     	private int depth;

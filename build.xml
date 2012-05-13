@@ -12,6 +12,7 @@
     <property name="source" value="1.6"/>
     <path id="GGP_Base.classpath">
         <pathelement location="bin"/>
+    	<pathelement location="/usr/lib/eclipse/dropins/jdt/plugins/org.junit4/junit.jar" />
         <pathelement location="src/external/FlyingSaucer/core-renderer.jar"/>
         <pathelement location="src/external/JTidy/Tidy.jar"/>
         <pathelement location="src/external/JGoodiesForms/forms-1.2.1.jar"/>

@@ -85,6 +85,12 @@ public class DirectRandomGamer extends Gamer {
 	public boolean abort(String matchId) {
 		return true;
 	}
+	
+
+	@Override
+	public void abortAll() {
+	}
+
 
 	@Override
 	public Match getMatch(String matchId) {
