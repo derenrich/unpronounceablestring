@@ -1,6 +1,7 @@
 package util.statemachine.implementation.propnet;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,7 +59,16 @@ public class SamplePropNetStateMachine extends StateMachine {
 	@Override
 	public boolean isTerminal(MachineState state) {
 		// TODO: Compute whether the MachineState is terminal.
-		return false;
+		
+		//How do I get state into the propnet?
+		for(Proposition p : ordering) {
+			/*if(p==propNet.getTerminalProposition())
+				return p.getValue();
+			else
+				p.getValue();*/
+		}
+		
+		return propNet.getTerminalProposition().getValue();
 	}
 	
 	/**
@@ -72,6 +82,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	public int getGoal(MachineState state, Role role)
 	throws GoalDefinitionException {
 		// TODO: Compute the goal for role in state.
+		//getGoalValue()
 		return -1;
 	}
 	
@@ -83,6 +94,10 @@ public class SamplePropNetStateMachine extends StateMachine {
 	@Override
 	public MachineState getInitialState() {
 		// TODO: Compute the initial state.
+		propNet.getInitProposition().setValue(true);
+		
+		// To compute t
+		
 		return null;
 	}
 	
@@ -103,6 +118,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	public MachineState getNextState(MachineState state, List<Move> moves)
 	throws TransitionDefinitionException {
 		// TODO: Compute the next state.
+		List<GdlTerm> terms = toDoes(moves);
 		return null;
 	}
 	
@@ -131,8 +147,41 @@ public class SamplePropNetStateMachine extends StateMachine {
 		// All of the propositions in the PropNet.
 		List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
 		
-	    // TODO: Compute the topological ordering.		
+		// TODO: Use this instead of contains for efficiency? I assume contains iterates list
+		//HashMap<Proposition,Boolean> used;
+	    
+		// TODO: Compute the topological ordering.	
 		
+		for(Proposition p : propositions) {
+			for(Component c: components) {
+				// If our proposition is an output, we must ensure inputs come first
+				if (c.getOutputs().contains(p)) {
+					// Ensure inputs already in order
+					for(Component i:c.getInputs()){
+						if(i instanceof Proposition){
+							if(!order.contains((Proposition)i))
+								continue;
+						}
+					}
+				}
+				propositions.remove(p);
+				order.add(p);
+				break;
+			}
+		}
+		
+		while(!propositions.isEmpty()) {
+			for(Proposition p : propositions) {
+				for(Component c: components) {
+					if (c.getOutputs().contains(p)) {
+						continue;
+					}
+					propositions.remove(p);
+					order.add(p);
+					break;
+				}
+			}
+		}
 		return order;
 	}
 	
