@@ -1,8 +1,10 @@
 package util.statemachine.implementation.propnet;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +18,9 @@ import util.gdl.grammar.GdlSentence;
 import util.gdl.grammar.GdlTerm;
 import util.propnet.architecture.Component;
 import util.propnet.architecture.PropNet;
+import util.propnet.architecture.components.And;
 import util.propnet.architecture.components.Proposition;
+import util.propnet.architecture.components.Transition;
 import util.propnet.factory.OptimizingPropNetFactory;
 import util.statemachine.MachineState;
 import util.statemachine.Move;
@@ -43,12 +47,19 @@ public class SamplePropNetStateMachine extends StateMachine {
      */
     @Override
     public void initialize(List<Gdl> description) {
+    	System.out.println("Test");
         try {
 			propNet = OptimizingPropNetFactory.create(description);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
         roles = propNet.getRoles();
+        // Debug:
+        System.out.println("Links: "+propNet.getNumLinks());
+        System.out.println("bp: "+propNet.getBasePropositions().size());
+        System.out.println("bp: "+propNet.getBasePropositions().values().size());
+        System.out.println("Inputs: "+propNet.getInputPropositions().values().size());
+        System.out.println("Inputs: "+propNet.getInputPropositions().values());
         ordering = getOrdering();
     }    
     
@@ -142,49 +153,78 @@ public class SamplePropNetStateMachine extends StateMachine {
 	    List<Proposition> order = new LinkedList<Proposition>();
 	    				
 		// All of the components in the PropNet
-		List<Component> components = new ArrayList<Component>(propNet.getComponents());
+		HashSet<Component> components = new HashSet<Component>(propNet.getComponents());
 		
 		// All of the propositions in the PropNet.
 		List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
 		
-		// TODO: Use this instead of contains for efficiency? I assume contains iterates list
-		//HashMap<Proposition,Boolean> used;
+		// TODO: Compute the topological ordering.	
+		
+		// Generate list of starting nodes
+		List<Proposition> start = new ArrayList<Proposition>();
+		start.addAll(propNet.getInputPropositions().values());
+		start.addAll(propNet.getBasePropositions().values());
+		// We need to catch baseProps so we don't accidently get a cycle
+		// HashSet<Proposition> baseProps = new HashSet<Proposition>(propNet.getBasePropositions().values());
+		
+		// Have we already
+		Set<Component> visited = new HashSet<Component>();
+		// Have we already added the Component to the ordering?
+		Set<Component> used = new HashSet<Component>();
+		
+		Set<Component> frontier = new HashSet<Component>();
+		Set<Component> fringe = new HashSet<Component>();
+		Set<Component> newFringe; 
+		for(Component s :start) {
+			fringe.addAll(s.getOutputs());
+		}
+		frontier.addAll(fringe);
+		used.addAll(start);
+		// Perform Depth first search of sorts
+		while(!frontier.isEmpty()){
+			System.out.println(frontier.size());
+			// Add what we can to the ordering
+			Iterator<Component> iter = frontier.iterator();
+			while(iter.hasNext()) {
+				Component c = iter.next();
+				boolean addMe = true;
+				for(Component parent:c.getInputs()) {
+					if(!used.contains(parent))
+						addMe = false;
+				}
+				if(addMe) {
+					iter.remove();
+					if(c instanceof Proposition)
+						order.add((Proposition)c);
+					used.add(c);
+				}
+			}
+			
+			// Expand the frontier
+			newFringe = new HashSet<Component>();
+			for(Component c: fringe) {
+				if(!(c instanceof Transition))
+					newFringe.addAll(c.getOutputs());
+			}
+			// baseProps are problematic. This is taken care of by not expanding transitions
+			//newFringe.removeAll(baseProps);
+			System.out.println("Adding "+newFringe.size());
+			fringe = newFringe;
+			frontier.addAll(fringe);
+			System.out.println("frontier: "+frontier);
+		}
+		
+
+		//for(Component n:startNodes) {
+			
+		//}
 	    
 		// TODO: Compute the topological ordering.	
 		
-		for(Proposition p : propositions) {
-			for(Component c: components) {
-				// If our proposition is an output, we must ensure inputs come first
-				if (c.getOutputs().contains(p)) {
-					// Ensure inputs already in order
-					for(Component i:c.getInputs()){
-						if(i instanceof Proposition){
-							if(!order.contains((Proposition)i))
-								continue;
-						}
-					}
-				}
-				propositions.remove(p);
-				order.add(p);
-				break;
-			}
-		}
-		
-		while(!propositions.isEmpty()) {
-			for(Proposition p : propositions) {
-				for(Component c: components) {
-					if (c.getOutputs().contains(p)) {
-						continue;
-					}
-					propositions.remove(p);
-					order.add(p);
-					break;
-				}
-			}
-		}
+
 		return order;
 	}
-	
+
 	/* Already implemented for you */
 	@Override
 	public List<Role> getRoles() {
