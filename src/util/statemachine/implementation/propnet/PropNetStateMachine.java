@@ -70,16 +70,8 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public boolean isTerminal(MachineState state) {
-		// TODO: Compute whether the MachineState is terminal.
-		
-		//How do I get state into the propnet?
-		for(Proposition p : ordering) {
-			/*if(p==propNet.getTerminalProposition())
-				return p.getValue();
-			else
-				p.getValue();*/
-		}
-		
+		this.injectState(state);
+		this.propogateTruth();
 		return propNet.getTerminalProposition().getValue();
 	}
 	
@@ -91,10 +83,15 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 * GoalDefinitionException because the goal is ill-defined. 
 	 */
 	@Override
-	public int getGoal(MachineState state, Role role)
-	throws GoalDefinitionException {
-		// TODO: Compute the goal for role in state.
-		//getGoalValue()
+	public int getGoal(MachineState state, Role role) throws GoalDefinitionException {
+		this.injectState(state);
+		this.propogateTruth();		
+		for(Proposition p : this.propNet.getGoalPropositions().get(role)){
+			if(p.getValue()) {
+				return this.getGoalValue(p);
+			}
+		}
+		// not a thing, should we throw? 
 		return -1;
 	}
 	
@@ -105,33 +102,40 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public MachineState getInitialState() {
-		// TODO: Compute the initial state.
 		propNet.getInitProposition().setValue(true);
-		
-		// To compute t
-		
-		return null;
+		this.propogateTruth();			
+		return this.getStateFromBase();
 	}
 	
 	/**
 	 * Computes the legal moves for role in state.
 	 */
 	@Override
-	public List<Move> getLegalMoves(MachineState state, Role role)
-	throws MoveDefinitionException {
-		// TODO: Compute legal moves.
-		return null;
+	public List<Move> getLegalMoves(MachineState state, Role role) throws MoveDefinitionException {
+		this.injectState(state);
+		this.propogateTruth();
+		List<Move> moves = new ArrayList<Move>();
+		for(Proposition p : this.propNet.getLegalPropositions().get(role)) {
+			if(p.getValue()) {
+				moves.add(getMoveFromProposition(p));
+			}
+		}
+		return moves;
 	}
 	
 	/**
 	 * Computes the next state given state and the list of moves.
 	 */
 	@Override
-	public MachineState getNextState(MachineState state, List<Move> moves)
-	throws TransitionDefinitionException {
-		// TODO: Compute the next state.
+	public MachineState getNextState(MachineState state, List<Move> moves) throws TransitionDefinitionException {
+		this.injectState(state);
+		this.propogateTruth();
 		List<GdlTerm> terms = toDoes(moves);
-		return null;
+		for(GdlTerm t : terms) {
+			this.propNet.getInputPropositions().get(t).setValue(true);
+		}
+		this.propogateTruth();
+		return this.getStateFromBase();
 	}
 	
 	/**
@@ -226,15 +230,16 @@ public class SamplePropNetStateMachine extends StateMachine {
 
 	/* Helper methods */
 	
-	/**
-	 * Does the stuffz
-	 */
 	private void propogateTruth(){
 		for(Proposition p : ordering) {
 			p.setValue(p.getSingleInput().getValue());
 		}
 	}
-	
+	private void injectState(MachineState state){
+		for(GdlSentence s : state.getContents()) {
+			propNet.getBasePropositions().get(s.getName()).setValue(true);
+		}
+	}	
 	
 	/**
 	 * The Input propositions are indexed by (does ?player ?action).
@@ -298,7 +303,6 @@ public class SamplePropNetStateMachine extends StateMachine {
 			{
 				contents.add(p.getName().toSentence());
 			}
-
 		}
 		return new MachineState(contents);
 	}
