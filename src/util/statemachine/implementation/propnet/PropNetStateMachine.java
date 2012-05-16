@@ -69,10 +69,10 @@ public class PropNetStateMachine extends StateMachine {
 	 * of the terminal proposition for the state.
 	 */
 	@Override
-	public boolean isTerminal(MachineState state) {
-		this.clearTruth();		
+	public synchronized boolean isTerminal(MachineState state) {
 		this.injectState(state);
 		this.propogateTruth();
+		int count = 0;
 		return propNet.getTerminalProposition().getValue();
 	}
 	
@@ -84,8 +84,7 @@ public class PropNetStateMachine extends StateMachine {
 	 * GoalDefinitionException because the goal is ill-defined. 
 	 */
 	@Override
-	public int getGoal(MachineState state, Role role) throws GoalDefinitionException {
-		this.clearTruth();
+	public synchronized int getGoal(MachineState state, Role role) throws GoalDefinitionException {
 		this.injectState(state);
 		this.propogateTruth();		
 		for(Proposition p : this.propNet.getGoalPropositions().get(role)){
@@ -103,24 +102,24 @@ public class PropNetStateMachine extends StateMachine {
 	 * and then computing the resulting state.
 	 */
 	@Override
-	public MachineState getInitialState() {
-		this.clearTruth();		
+	public synchronized MachineState getInitialState() {
 		propNet.getInitProposition().setValue(true);
-		this.propogateTruth();			
-		return this.getStateFromBase();
+		this.propogateTruth();		
+		MachineState s =  this.getStateFromBase();
+		propNet.getInitProposition().setValue(false);
+		return s;
 	}
 	
 	/**
 	 * Computes the legal moves for role in state.
 	 */
 	@Override
-	public List<Move> getLegalMoves(MachineState state, Role role) throws MoveDefinitionException {
-		this.clearTruth();
+	public synchronized List<Move> getLegalMoves(MachineState state, Role role) throws MoveDefinitionException {
 		this.injectState(state);
 		this.propogateTruth();
 		List<Move> moves = new ArrayList<Move>();
-		for(Proposition p : this.propNet.getLegalPropositions().get(role)) {
-			if(p.getValue()) {
+		for(Proposition p : this.propNet.getLegalPropositions().get(role)) {	
+			if(p.getValue()){
 				moves.add(getMoveFromProposition(p));
 			}
 		}
@@ -131,8 +130,7 @@ public class PropNetStateMachine extends StateMachine {
 	 * Computes the next state given state and the list of moves.
 	 */
 	@Override
-	public MachineState getNextState(MachineState state, List<Move> moves) throws TransitionDefinitionException {
-		this.clearTruth();		
+	public synchronized MachineState getNextState(MachineState state, List<Move> moves) throws TransitionDefinitionException {
 		this.injectState(state);
 		this.propogateTruth();
 		List<GdlTerm> terms = toDoes(moves);
@@ -140,7 +138,16 @@ public class PropNetStateMachine extends StateMachine {
 			this.propNet.getInputPropositions().get(t).setValue(true);
 		}
 		this.propogateTruth();
-		return this.getStateFromBase();
+		/*
+		for(Proposition p : this.propNet.getBasePropositions().values()) {
+			updatePropositionValue(p);
+		}*/
+		MachineState s = this.getStateFromBase();
+		for(Proposition p : propNet.getInputPropositions().values()) {
+			p.setValue(false);
+		}
+
+		return s;
 	}
 	
 	/**
@@ -223,6 +230,7 @@ public class PropNetStateMachine extends StateMachine {
 				System.out.println("The "+propositions.size()+" lost souls: "+propositions);
 				break;
 			}
+
 		}
 		return order;
 	}
@@ -234,10 +242,11 @@ public class PropNetStateMachine extends StateMachine {
 	}
 
 	/* Helper methods */
-	private void clearTruth() {
-		for(Proposition p : propNet.getPropositions()) {
-			p.setValue(false);
-		}
+	
+	private static boolean updatePropositionValue(Proposition p) {
+		boolean val = p.getSingleInput().getValue();
+		p.setValue(val);
+		return val;
 	}
 	private void propogateTruth(){
 		for(Proposition p : ordering) {
@@ -245,6 +254,11 @@ public class PropNetStateMachine extends StateMachine {
 		}
 	}
 	private void injectState(MachineState state){
+		
+		for(Proposition p : propNet.getBasePropositions().values()) {
+			p.setValue(false);
+		}
+				
 		for(GdlSentence s : state.getContents()) {
 			propNet.getBasePropositions().get(s.toTerm()).setValue(true);
 		}

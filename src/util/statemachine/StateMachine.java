@@ -241,7 +241,7 @@ public abstract class StateMachine
     
     public MachineState performDepthCharge(MachineState state, int[] theDepth) throws TransitionDefinitionException, MoveDefinitionException {  
         int nDepth = 0;
-        while(!isTerminal(state)) {
+        while(!isTerminal(state) && !Thread.currentThread().isInterrupted()) {
             nDepth++;
             state = getNextStateDestructively(state, getRandomJointMove(state));
         }
@@ -251,7 +251,7 @@ public abstract class StateMachine
     }    
     public MachineState performRememberingDepthCharge(MachineState state, ArrayList<MachineState> history) throws TransitionDefinitionException, MoveDefinitionException {
     	history.add(state);
-        while(!isTerminal(state)) {
+        while(!isTerminal(state) && !Thread.currentThread().isInterrupted()) {
             state = getNextState(state, getRandomJointMove(state));
             history.add(state);
         }

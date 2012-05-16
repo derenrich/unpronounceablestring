@@ -1,8 +1,17 @@
 package util.heuristic;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import util.statemachine.MachineState;
 import util.statemachine.Role;
@@ -13,97 +22,86 @@ import util.statemachine.exceptions.TransitionDefinitionException;
 
 public class DepthCharge extends Heuristic {
 	final int THREAD_COUNT = 4;
+	final int MAX_CHARGES = 4;
+	final int MAX_TIME = 3000;
+	ScheduledExecutorService e;
 	CountDownLatch endSignal;
+	
 	public DepthCharge(StateMachine sm, Role ourPlayer) {
 		super(sm, ourPlayer);
-		charge_wins = 0;			
-		charge_losses = 0;		
-		threads = new ArrayList<Charger>();
-		for(int i = 0; i < THREAD_COUNT; i++){
-			Charger t = new Charger();
-			threads.add(t);
-			 t.start();
-		}
+		e = Executors.newScheduledThreadPool(THREAD_COUNT);	
 	}
-	public int charge_count = 0;
-	public int state_count = 0;
 	
-	volatile int charge_wins = 0;
-	volatile int charge_losses = 0;
+	public int state_count = 0;
+	public int total_charge_count = 0;
+	
 	ArrayList<Charger> threads;
 	@Override
 	public float getScore(MachineState s) throws MoveDefinitionException,
-			TransitionDefinitionException, GoalDefinitionException {
+			TransitionDefinitionException, GoalDefinitionException {		
+		long final_time = System.currentTimeMillis() + MAX_TIME;
 		state_count++;
-		charge_wins = 0;			
-		charge_losses = 0;
-		endSignal = new CountDownLatch(THREAD_COUNT);
-		 for(Charger t : threads) {
-			 synchronized(t){
-				 t.ourPlayer = this.ourPlayer;
-				 t.s = s;
-				 t.suspended = false;
-				 t.notify();
-			 }
-		 }
-		// wait
+		List<Future<Integer>> results = new ArrayList<Future<Integer>>();
+		for(int i=0; i < MAX_CHARGES; i++) {
+			results.add(e.submit(new Charger(s)));
+		}
+		int goal_sum = 0;
+		int charge_counts = 0;
 		try {
-			Thread.sleep(0,500);			
-			for(Charger t : threads){
-				t.suspended = true;
-			}	
-			endSignal.await();
+			for(Future<Integer> f : results) {				
+				try {						
+					int goal = f.get(final_time - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+					if(goal >= 0) {
+						goal_sum += goal;
+						charge_counts++; 
+					}
+				} catch (ExecutionException e) {
+					e.printStackTrace();
+				} catch (TimeoutException e) {
+					f.cancel(true);
+				}
+			}
 		} catch (InterruptedException e) {
-			// we need to finish ASAP
-			// no time to join
+			e.printStackTrace();
 			Thread.currentThread().interrupt();
 		}
-		if (charge_wins + charge_losses > 0) {
-			charge_count += charge_wins + charge_losses;
-			return charge_wins  / (float) (charge_wins + charge_losses);
+		total_charge_count += charge_counts;
+		if (charge_counts > 0 ){
+			return goal_sum / (float) charge_counts;
 		} else {
-			// if we have to make something up...
-			return 0.5f;
+			// assume the conservative option
+			return 0;
 		}
-	}
-	@Override
-	public String getName() {
-		return "DepthCharge";
 	}
 	
-	private class Charger extends Thread {
-		public MachineState s;
-		public Role ourPlayer;
-		public boolean suspended = false;
-		public  void win() {
-			charge_wins++;
-		}
-		public void lose() {
-			charge_losses++;
+	@Override
+	public String getName() {
+		return "DepthCharge";		
+	}
+	
+	private class Charger implements Callable<Integer> {
+		MachineState s;
+		Charger(MachineState s){
+			this.s = s;
 		}
 		@Override
-		public void run() {
-			while(true){
+		public Integer call() {
 			try {
-				synchronized(this) {
-					wait();
+				MachineState final_state = sm.performDepthCharge(s, null);
+				if (sm.isTerminal(final_state)){
+					return sm.getGoal(final_state, ourPlayer);
+				} else { 
+					return -1;
 				}
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			}
-			while(!suspended) {
-				try {
-					MachineState final_state = sm.performDepthCharge(s, null);
-					if(sm.getGoal(final_state, ourPlayer) > 0){
-						win();
-					} else {
-						lose();
-					}
-				} catch(Exception e) {
-					e.printStackTrace();
-				}
-			}
-			endSignal.countDown();
+			} catch (GoalDefinitionException e) {
+				e.printStackTrace();
+				return 0;
+			} catch (TransitionDefinitionException e) {
+				e.printStackTrace();
+				return 0;
+			} catch (MoveDefinitionException e) {
+				e.printStackTrace();
+				return 0;
 			}
 		}
 	}

@@ -25,15 +25,20 @@ import util.statemachine.StateMachine;
 import util.statemachine.exceptions.GoalDefinitionException;
 import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
+import util.statemachine.implementation.propnet.PropNetStateMachine;
 import util.statemachine.implementation.prover.ProverStateMachine;
 
 public class SuperSearch extends StateMachineGamer {
 	
 	CachedStateMachine cachedStateMachine;
+	PropNetStateMachine propNetStateMachine;
 	
 	@Override
 	public StateMachine getInitialStateMachine() {
-		cachedStateMachine = new CachedStateMachine(new ProverStateMachine());
+		//cachedStateMachine = new CachedStateMachine(new ProverStateMachine());
+		//return (StateMachine) cachedStateMachine;
+		propNetStateMachine = new PropNetStateMachine();
+		cachedStateMachine = new CachedStateMachine(propNetStateMachine);
 		return (StateMachine) cachedStateMachine;
 	}
 	Heuristic h;
@@ -54,33 +59,39 @@ public class SuperSearch extends StateMachineGamer {
 			GoalDefinitionException {
 		values = new ConcurrentHashMap<MachineState,Score>(HashCapacity);
 		moves = new ConcurrentHashMap<MachineState,Move>(HashCapacity);
-		
-		Heuristic[] hs = new Heuristic[2];
+		if(propNetStateMachine != null) {
+			propNetStateMachine.initialize(this.match.getGame().getRules());
+		}
+		/*
+		Heuristic[] hs = new Heuristic[1];
 		hs[0] = new MobilityHeuristic(this.getStateMachine(), this.getRole(), 1);
 		hs[1] = new OpponentFocusHeuristic(this.getStateMachine(), this.getRole(), 1);
 		float[] weights = {0.4f, 0.6f};
 		h = new CombinationHeuristic(this.getStateMachine(), this.getRole(), hs, weights);
-
+		 */
+		//h = new DepthCharge(this.getStateMachine(), this.getRole());
+		h = new DummyHeuristic(this.getStateMachine(), this.getRole());
 		EndBook book = new EndBook();
 		wins = Collections.newSetFromMap(new ConcurrentHashMap<MachineState,Boolean>(1000000));
 		losses = Collections.newSetFromMap(new ConcurrentHashMap<MachineState,Boolean>(1000000));
 		
-		try {
+		//try {
 			System.out.println("Spawning headstart search");
 		    searcher = new MinimaxThread(initial_search_depth);
 		    search_thread = new Thread(searcher);
 		    search_thread.start();
 			System.out.println("Generating endgame book");
-			book.generateBook(this.getCurrentState(), cachedStateMachine, this.getRole(), timeout, wins, losses);
+			//book.generateBook(this.getCurrentState(), cachedStateMachine, this.getRole(), timeout, wins, losses);
 			// spawn 2 book threads
 			System.out.println("Generated an endgame book of size: " + (wins.size() + losses.size()));
-			book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
-			book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
-			book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
-		} catch (InterruptedException e) {
+			//book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
+			//book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
+			//book.expandBook(this.getCurrentState(), cachedStateMachine, this.getRole(), wins, losses);
+		//} 
+			/*catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			e.printStackTrace();
-		}		
+		}	*/	
 	}			
 	public void findMinMax(int depth) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		Score alpha = new Score();

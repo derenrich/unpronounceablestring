@@ -18,13 +18,13 @@ import util.kif.KifReader;
 import util.statemachine.MachineState;
 import util.statemachine.Move;
 import util.statemachine.Role;
-import util.statemachine.implementation.propnet.SamplePropNetStateMachine;
+import util.statemachine.implementation.propnet.PropNetStateMachine;
 import util.statemachine.implementation.prover.ProverStateMachine;
 
-public class propnetTest {
-	 protected final static SamplePropNetStateMachine sm = new SamplePropNetStateMachine();
+public class PropNetTest {
+	 protected final static PropNetStateMachine sm = new PropNetStateMachine();
 	 public static void main(String args[]) throws Exception {
-	        List<Gdl> ticTacToeDesc = KifReader.read("games/games/ticTacToe/tictactoe.kif");
+	        List<Gdl> ticTacToeDesc = KifReader.read("games/games/ticTacToe/ticTacToe.kif");
 	        sm.initialize(ticTacToeDesc);
 	        MachineState state = sm.getInitialState();
 	        Assert.assertFalse(sm.isTerminal(state));
