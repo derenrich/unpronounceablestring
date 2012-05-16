@@ -10,6 +10,7 @@ import util.statemachine.StateMachine;
 import util.statemachine.exceptions.GoalDefinitionException;
 import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
+import util.statemachine.implementation.propnet.PropNetStateMachine;
 import util.statemachine.implementation.prover.ProverStateMachine;
 import apps.player.detail.DetailPanel;
 
@@ -67,7 +68,10 @@ public final class LegalGamer extends StateMachineGamer
 	 */
 	@Override
 	public StateMachine getInitialStateMachine() {
-		return new ProverStateMachine();
+		//return new ProverStateMachine();
+		PropNetStateMachine sm = new PropNetStateMachine();		
+		sm.initialize(this.match.getGame().getRules());
+		return sm;
 	}
 	@Override
 	public String getName() {

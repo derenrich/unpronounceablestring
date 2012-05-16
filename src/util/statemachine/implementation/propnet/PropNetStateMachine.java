@@ -32,7 +32,7 @@ import util.statemachine.exceptions.TransitionDefinitionException;
 import util.statemachine.implementation.prover.query.ProverQueryBuilder;
 
 @SuppressWarnings("unused")
-public class SamplePropNetStateMachine extends StateMachine {
+public class PropNetStateMachine extends StateMachine {
     /** The underlying proposition network  */
     private PropNet propNet;
     /** The topological ordering of the propositions */
@@ -70,6 +70,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public boolean isTerminal(MachineState state) {
+		this.clearTruth();		
 		this.injectState(state);
 		this.propogateTruth();
 		return propNet.getTerminalProposition().getValue();
@@ -84,6 +85,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public int getGoal(MachineState state, Role role) throws GoalDefinitionException {
+		this.clearTruth();
 		this.injectState(state);
 		this.propogateTruth();		
 		for(Proposition p : this.propNet.getGoalPropositions().get(role)){
@@ -102,6 +104,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public MachineState getInitialState() {
+		this.clearTruth();		
 		propNet.getInitProposition().setValue(true);
 		this.propogateTruth();			
 		return this.getStateFromBase();
@@ -112,6 +115,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public List<Move> getLegalMoves(MachineState state, Role role) throws MoveDefinitionException {
+		this.clearTruth();
 		this.injectState(state);
 		this.propogateTruth();
 		List<Move> moves = new ArrayList<Move>();
@@ -128,6 +132,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public MachineState getNextState(MachineState state, List<Move> moves) throws TransitionDefinitionException {
+		this.clearTruth();		
 		this.injectState(state);
 		this.propogateTruth();
 		List<GdlTerm> terms = toDoes(moves);
@@ -229,7 +234,11 @@ public class SamplePropNetStateMachine extends StateMachine {
 	}
 
 	/* Helper methods */
-	
+	private void clearTruth() {
+		for(Proposition p : propNet.getPropositions()) {
+			p.setValue(false);
+		}
+	}
 	private void propogateTruth(){
 		for(Proposition p : ordering) {
 			p.setValue(p.getSingleInput().getValue());
@@ -237,7 +246,7 @@ public class SamplePropNetStateMachine extends StateMachine {
 	}
 	private void injectState(MachineState state){
 		for(GdlSentence s : state.getContents()) {
-			propNet.getBasePropositions().get(s.getName()).setValue(true);
+			propNet.getBasePropositions().get(s.toTerm()).setValue(true);
 		}
 	}	
 	

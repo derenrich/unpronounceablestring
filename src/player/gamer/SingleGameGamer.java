@@ -25,7 +25,7 @@ import apps.player.detail.EmptyDetailPanel;
 
 public abstract class SingleGameGamer extends Gamer implements Subject{
 	
-	private Match match;
+	protected Match match;
 	private GdlProposition roleName;
 
 	public SingleGameGamer()
