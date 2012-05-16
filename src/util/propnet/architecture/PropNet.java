@@ -500,8 +500,6 @@ public final class PropNet
 	 * The INIT and terminal components cannot be removed.
 	 */
 	public void removeComponent(Component c) {
-		
-		
 		//Go through all the collections it could appear in
 		if(c instanceof Proposition) {
 			Proposition p = (Proposition) c;
@@ -545,7 +543,5 @@ public final class PropNet
 		for(Component child : c.getOutputs())
 			child.removeInput(c);
 		//These are actually unnecessary...
-		//c.removeAllInputs();
-		//c.removeAllOutputs();
 	}
 }
