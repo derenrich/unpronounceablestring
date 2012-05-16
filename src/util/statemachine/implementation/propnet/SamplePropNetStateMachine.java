@@ -225,7 +225,17 @@ public class SamplePropNetStateMachine extends StateMachine {
 	}
 
 	/* Helper methods */
-		
+	
+	/**
+	 * Does the stuffz
+	 */
+	private void propogateTruth(){
+		for(Proposition p : ordering) {
+			p.setValue(p.getSingleInput().getValue());
+		}
+	}
+	
+	
 	/**
 	 * The Input propositions are indexed by (does ?player ?action).
 	 * 
