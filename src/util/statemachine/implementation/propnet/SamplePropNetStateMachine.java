@@ -60,6 +60,7 @@ public class SamplePropNetStateMachine extends StateMachine {
         System.out.println("bp: "+propNet.getBasePropositions().values().size());
         System.out.println("Inputs: "+propNet.getInputPropositions().values().size());
         System.out.println("Inputs: "+propNet.getInputPropositions().values());
+        propNet.renderToFile("debug.txt");
         ordering = getOrdering();
     }    
     
@@ -164,27 +165,22 @@ public class SamplePropNetStateMachine extends StateMachine {
 		List<Proposition> start = new ArrayList<Proposition>();
 		start.addAll(propNet.getInputPropositions().values());
 		start.addAll(propNet.getBasePropositions().values());
-		// We need to catch baseProps so we don't accidently get a cycle
-		// HashSet<Proposition> baseProps = new HashSet<Proposition>(propNet.getBasePropositions().values());
-		
-		// Have we already
-		Set<Component> visited = new HashSet<Component>();
+		start.add(propNet.getInitProposition());
+
 		// Have we already added the Component to the ordering?
 		Set<Component> used = new HashSet<Component>();
 		
 		Set<Component> frontier = new HashSet<Component>();
-		Set<Component> fringe = new HashSet<Component>();
-		Set<Component> newFringe; 
+		Set<Component> fringe;
 		for(Component s :start) {
-			fringe.addAll(s.getOutputs());
+			frontier.addAll(s.getOutputs());
 		}
-		frontier.addAll(fringe);
 		used.addAll(start);
 		// Perform Depth first search of sorts
 		while(!frontier.isEmpty()){
-			System.out.println(frontier.size());
 			// Add what we can to the ordering
 			Iterator<Component> iter = frontier.iterator();
+			fringe = new HashSet<Component>();
 			while(iter.hasNext()) {
 				Component c = iter.next();
 				boolean addMe = true;
@@ -197,31 +193,28 @@ public class SamplePropNetStateMachine extends StateMachine {
 					if(c instanceof Proposition)
 						order.add((Proposition)c);
 					used.add(c);
+					// Expand the frontier
+					fringe.addAll(c.getOutputs());
 				}
 			}
 			
 			// Expand the frontier
-			newFringe = new HashSet<Component>();
-			for(Component c: fringe) {
-				if(!(c instanceof Transition))
-					newFringe.addAll(c.getOutputs());
-			}
+
 			// baseProps are problematic. This is taken care of by not expanding transitions
 			//newFringe.removeAll(baseProps);
-			System.out.println("Adding "+newFringe.size());
-			fringe = newFringe;
+			fringe.removeAll(used);
+			// System.out.println("Adding : "+fringe.size());
+			// System.out.println("Frontier size: " + frontier.size());
+			// System.out.println("Ordered : "+order.size()+" of " + (propositions.size()-start.size()));
 			frontier.addAll(fringe);
-			System.out.println("frontier: "+frontier);
+			if(fringe.size()==0) {
+				System.out.println("We have run out of options");
+				propositions.removeAll(order);
+				propositions.removeAll(start);
+				System.out.println("The "+propositions.size()+" lost souls: "+propositions);
+				break;
+			}
 		}
-		
-
-		//for(Component n:startNodes) {
-			
-		//}
-	    
-		// TODO: Compute the topological ordering.	
-		
-
 		return order;
 	}
 
