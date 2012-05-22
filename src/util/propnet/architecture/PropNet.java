@@ -16,6 +16,7 @@ import util.gdl.grammar.GdlProposition;
 import util.gdl.grammar.GdlTerm;
 import util.logging.GamerLogger;
 import util.propnet.architecture.components.And;
+import util.propnet.architecture.components.Constant;
 import util.propnet.architecture.components.Not;
 import util.propnet.architecture.components.Or;
 import util.propnet.architecture.components.Proposition;
@@ -156,6 +157,17 @@ public final class PropNet
 		}
 		return legalInputMap;
 	}
+	
+	public Set<Constant> getConstantComponents() 
+	{
+		Set<Constant> constantProps = new HashSet<Constant>();
+		for(Component p : this.components) {
+			if(p instanceof Constant) {
+				constantProps.add((Constant) p);
+			}
+		}
+		return constantProps;
+	}	
 	
 	/**
 	 * Getter method.

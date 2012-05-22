@@ -157,7 +157,7 @@ public class PropNetStateMachine extends StateMachine {
         	for(GdlTerm t : terms) {
         		this.propNet.getInputPropositions().get(t).setValue(true);
         	}
-        	this.propogateTruth();		
+        	this.propogateTruth();
         	MachineState s = this.getStateFromBase();
         	for(Proposition p : propNet.getInputPropositions().values()) {
         		p.setValue(false);
@@ -189,24 +189,23 @@ public class PropNetStateMachine extends StateMachine {
 		HashSet<Component> components = new HashSet<Component>(propNet.getComponents());
 		
 		// All of the propositions in the PropNet.
-		List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
-		
-		// TODO: Compute the topological ordering.	
+		List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());	
 		
 		// Generate list of starting nodes
 		List<Proposition> start = new ArrayList<Proposition>();
 		start.addAll(propNet.getInputPropositions().values());
 		start.addAll(propNet.getBasePropositions().values());
 		start.add(propNet.getInitProposition());
-
-		// Have we already added the Component to the ordering?
-		Set<Component> used = new HashSet<Component>();
 		
+		// Have we already added the Component to the ordering?
+		Set<Component> used = new HashSet<Component>();		
 		Set<Component> frontier = new HashSet<Component>();
 		Set<Component> fringe;
+		
 		for(Component s :start) {
 			frontier.addAll(s.getOutputs());
 		}
+		frontier.addAll(propNet.getConstantComponents());
 		used.addAll(start);
 		// Perform Depth first search of sorts
 		while(!frontier.isEmpty()){
@@ -215,6 +214,7 @@ public class PropNetStateMachine extends StateMachine {
 			fringe = new HashSet<Component>();
 			while(iter.hasNext()) {
 				Component c = iter.next();
+				// check if all parents are computed
 				boolean addMe = true;
 				for(Component parent:c.getInputs()) {
 					if(!used.contains(parent))
@@ -231,21 +231,11 @@ public class PropNetStateMachine extends StateMachine {
 			}
 			
 			// Expand the frontier
-			// baseProps are problematic. This is taken care of by not expanding transitions
-			//newFringe.removeAll(baseProps);
 			fringe.removeAll(used);
-			// System.out.println("Adding : "+fringe.size());
-			// System.out.println("Frontier size: " + frontier.size());
-			// System.out.println("Ordered : "+order.size()+" of " + (propositions.size()-start.size()));
 			frontier.addAll(fringe);
 			if(fringe.size()==0) {
-				System.out.println("We have run out of options");
-				propositions.removeAll(order);
-				propositions.removeAll(start);
-				System.out.println("The "+propositions.size()+" lost souls: "+propositions);
 				break;
 			}
-
 		}
 		return order;
 	}
@@ -269,12 +259,7 @@ public class PropNetStateMachine extends StateMachine {
 			p.setValue(p.getSingleInput().getValue());
 		}
 	}
-	private void injectState(MachineState state){
-		
-		for(Proposition p : propNet.getBasePropositions().values()) {
-			p.setValue(false);
-		}
-				
+	private void injectState(MachineState state){		
 		for(GdlSentence s : state.getContents()) {
 			propNet.getBasePropositions().get(s.toTerm()).setValue(true);
 		}
