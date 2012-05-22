@@ -330,4 +330,45 @@ public class PropNetStateMachine extends StateMachine {
 		}
 		return new MachineState(contents);
 	}
+	
+	/**
+	 * Split the given state machine into independent games.
+	 */
+	public ArrayList<PropNetStateMachine> splitGames() {
+		int set = 0;
+		Proposition terminal = propNet.getTerminalProposition();
+		ArrayList<Set<Component>> partitions = new ArrayList<Set<Component>>();
+		HashMap<Component, Component> toClone = new HashMap<Component, Component>();
+		HashMap<Component, Component> toGoalClone = new HashMap<Component, Component>();
+		Component terminalClone;
+		HashSet<Component> seen = new HashSet<Component>();
+		seen.add(terminal);
+		Component terminalInput = terminal.getSingleInput();
+		seen.add(terminalInput);
+		if(terminalInput instanceof And) {
+			for (Component tInputs :terminal.getInputs()) {
+				if(!seen.contains(tInputs)){
+					partitions.add(new HashSet<Component>());
+					set++;
+					seen.add(tInputs);
+					partitions.get(set).add(tInputs);
+					// We now find all connected components. We do not mark goals or constants as seen, as these can be used in multiple places.
+					// I don't exactly know what to do about the init island of wonders...
+					HashSet<Component> explore = new HashSet<Component>();
+					explore.addAll(tInputs.getInputs());
+					explore.addAll(tInputs.getOutputs());
+					while(!explore.isEmpty()) {
+						Iterator<Component> itr = explore.iterator();
+						while(itr.hasNext()) {
+							Component next = itr.next();
+							if(seen.contains(next))
+								continue;
+						}
+					}
+				}
+			}
+				
+		}
+		return null;
+	}
 }
