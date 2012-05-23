@@ -376,6 +376,7 @@ public class PropNetStateMachine extends StateMachine {
 				mapping.get(c).addInput(mapping.get(o));
 			}
 		}
+		partition.add(c);
 	}
 	public ArrayList<PropNetStateMachine> splitGames() {
 		// Things in here are things we do not need to explore
@@ -476,6 +477,9 @@ public class PropNetStateMachine extends StateMachine {
 			return machines;
 		}
 		System.out.println("We believe there are "+partitions.size() + " subgames.\n");
+		for(int i=0; i< partitions.size();i++) {
+			System.out.println("Parition " + i+" has "+partitions.get(i).size()+" components.\n");
+		}
 		System.out.println("We have used "+seen.size() + " of "+propNet.getComponents().size()+" components\n");
 		
 		// Create propNets
