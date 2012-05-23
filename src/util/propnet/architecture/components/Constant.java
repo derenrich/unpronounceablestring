@@ -22,6 +22,10 @@ public final class Constant extends Component
 		this.value = value;
 	}
 
+	public Constant(Constant c)
+	{
+		this.value = c.getValue();
+	}
 	/**
 	 * Returns the value that the constant was initialized to.
 	 * 

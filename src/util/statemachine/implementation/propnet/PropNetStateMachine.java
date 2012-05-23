@@ -19,6 +19,7 @@ import util.gdl.grammar.GdlTerm;
 import util.propnet.architecture.Component;
 import util.propnet.architecture.PropNet;
 import util.propnet.architecture.components.And;
+import util.propnet.architecture.components.Or;
 import util.propnet.architecture.components.Proposition;
 import util.propnet.architecture.components.Transition;
 import util.propnet.factory.OptimizingPropNetFactory;
@@ -334,29 +335,34 @@ public class PropNetStateMachine extends StateMachine {
 	/**
 	 * Split the given state machine into independent games.
 	 */
+	private void explore(Component c, Set<Component> partition, HashMap<Component,Component> mapping, Set<Component> seen) {
+		
+	}
 	public ArrayList<PropNetStateMachine> splitGames() {
 		int set = 0;
 		Proposition terminal = propNet.getTerminalProposition();
 		ArrayList<Set<Component>> partitions = new ArrayList<Set<Component>>();
-		HashMap<Component, Component> toClone = new HashMap<Component, Component>();
-		HashMap<Component, Component> toGoalClone = new HashMap<Component, Component>();
+		HashMap<Component, Component> cloneMap = new HashMap<Component, Component>();
 		Component terminalClone;
 		HashSet<Component> seen = new HashSet<Component>();
 		seen.add(terminal);
 		Component terminalInput = terminal.getSingleInput();
 		seen.add(terminalInput);
-		if(terminalInput instanceof And) {
-			for (Component tInputs :terminal.getInputs()) {
-				if(!seen.contains(tInputs)){
-					partitions.add(new HashSet<Component>());
+		Component clone;
+		if(terminalInput instanceof Or) {
+			for (Component tInput :terminal.getInputs()) {
+				if(!seen.contains(tInput)){
+					HashSet<Component> partition = new HashSet<Component>();
+					cloneMap = new HashMap<Component, Component>();					
+					
 					set++;
-					seen.add(tInputs);
-					partitions.get(set).add(tInputs);
+					seen.add(tInput);
+					partitions.get(set).add(tInput);
 					// We now find all connected components. We do not mark goals or constants as seen, as these can be used in multiple places.
 					// I don't exactly know what to do about the init island of wonders...
 					HashSet<Component> explore = new HashSet<Component>();
-					explore.addAll(tInputs.getInputs());
-					explore.addAll(tInputs.getOutputs());
+					explore.addAll(tInput.getInputs());
+					explore.addAll(tInput.getOutputs());
 					while(!explore.isEmpty()) {
 						Iterator<Component> itr = explore.iterator();
 						while(itr.hasNext()) {
@@ -365,6 +371,9 @@ public class PropNetStateMachine extends StateMachine {
 								continue;
 						}
 					}
+					
+					
+					partitions.add(partition);
 				}
 			}
 				

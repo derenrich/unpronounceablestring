@@ -26,6 +26,11 @@ public final class Proposition extends Component
 		this.value = false;
 	}
 
+	public Proposition(Proposition p)
+	{
+		this.name = p.getName();
+		this.value = p.getValue();
+	}
 	/**
 	 * Getter method.
 	 * 

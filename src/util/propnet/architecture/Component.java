@@ -28,6 +28,11 @@ public abstract class Component implements Serializable
         this.outputs = new HashSet<Component>();
     }
 
+    public Component(Component c)
+    {
+        this.inputs = new HashSet<Component>();
+        this.outputs = new HashSet<Component>();
+    }
     /**
      * Adds a new input.
      * 
