@@ -362,7 +362,6 @@ public class PropNetStateMachine extends StateMachine {
 		if(mapping.containsKey(c)) {
 			// Here, c was in the mapping table, despite not having been seen. This means it was a special node.
 			delayedEval.add(c);
-			return;
 		} else {
 			mapping.put(c, c.copy_noCon());
 			for(Component i : c.getInputs()) {
@@ -376,7 +375,7 @@ public class PropNetStateMachine extends StateMachine {
 				mapping.get(c).addInput(mapping.get(o));
 			}
 		}
-		partition.add(c);
+		partition.add(mapping.get(c));
 	}
 	public ArrayList<PropNetStateMachine> splitGames() {
 		// Things in here are things we do not need to explore
@@ -456,16 +455,30 @@ public class PropNetStateMachine extends StateMachine {
 					
 					// Finish special partitions
 					for(Component c :specialComps) {
+						System.out.println("Handling special case: c");
 						for(Component i : c.getInputs()) {
 							// Add appropriate cloned input, if in subgraph
 							if(cloneMap.containsKey(i))
 								cloneMap.get(c).addInput(cloneMap.get(i));
 						}
+						System.out.println("Original:"+c);
+						System.out.println("Clone:"+cloneMap.get(c));
+						System.out.println("Original had "+c.getInputs().size()+ " inputs.\n Clone has "+cloneMap.get(c).getInputs().size());
 						for(Component o : c.getOutputs()) {
 							// Add appropriate cloned output, if in subgraph
 							if(cloneMap.containsKey(o))
 								cloneMap.get(c).addOutput(cloneMap.get(o));
 						}
+						if(cloneMap.get(c) instanceof Proposition){
+							if( ((Proposition)cloneMap.get(c)).getName() instanceof GdlConstant) {
+								GdlConstant constant = (GdlConstant) ((Proposition)cloneMap.get(c)).getName();
+								System.out.println("Name is: "+ constant.getValue());
+								System.out.println(partition.contains(cloneMap.get(c)));
+							}
+						}
+						System.out.println("Original had "+c.getOutputs().size()+ " outputs.\n Clone has "+cloneMap.get(c).getOutputs().size());
+						System.out.println("original In:\n"+c.getInputs());
+						System.out.println("original Out:\n"+c.getOutputs());
 					}
 					
 					partitions.add(partition);
@@ -476,7 +489,7 @@ public class PropNetStateMachine extends StateMachine {
 			machines.add(this);
 			return machines;
 		}
-		System.out.println("We believe there are "+partitions.size() + " subgames.\n");
+		System.out.println("\nWe believe there are "+partitions.size() + " subgames.\n");
 		for(int i=0; i< partitions.size();i++) {
 			System.out.println("Parition " + i+" has "+partitions.get(i).size()+" components.\n");
 		}
@@ -487,8 +500,11 @@ public class PropNetStateMachine extends StateMachine {
 		unused.removeAll(seen);
 		for(Set<Component> part : partitions) {
 			// This should be ok since we're already giving up on concurrency. Maybe clone these instead?
+			System.out.print(part.size() +" + "+ unused.size() + "=");
 			part.addAll(unused);
+			System.out.println(part.size());
 			PropNet p = new PropNet(roles, part);
+			System.out.println("TERMINAL:"+p.getTerminalProposition());
 			machines.add(new PropNetStateMachine(p));
 		}
 		return machines;
