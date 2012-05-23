@@ -157,5 +157,6 @@ public abstract class Component implements Serializable
 
         return sb.toString();
     }
-
+    /* Copies, does not include input/outputs */
+    abstract public Component copy_noCon();
 }

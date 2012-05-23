@@ -35,4 +35,9 @@ public final class And extends Component
 		return toDot("invhouse", "grey", "AND");
 	}
 
+	@Override
+	public Component copy_noCon() {
+		// TODO Auto-generated method stub
+		return new And();
+	}
 }

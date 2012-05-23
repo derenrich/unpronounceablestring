@@ -34,4 +34,10 @@ public final class Or extends Component
 	{
 		return toDot("ellipse", "grey", "OR");
 	}
+
+	@Override
+	public Component copy_noCon() {
+		// TODO Auto-generated method stub
+		return new Or();
+	}
 }

@@ -8,6 +8,7 @@ import util.propnet.architecture.Component;
 @SuppressWarnings("serial")
 public final class Constant extends Component
 {
+	
 	/** The value of the constant. */
 	private final boolean value;
 
@@ -44,5 +45,11 @@ public final class Constant extends Component
 	public String toString()
 	{
 		return toDot("doublecircle", "grey", Boolean.toString(value).toUpperCase());
+	}
+
+	@Override
+	public Component copy_noCon() {
+		// TODO Auto-generated method stub
+		return new Constant(this);
 	}
 }

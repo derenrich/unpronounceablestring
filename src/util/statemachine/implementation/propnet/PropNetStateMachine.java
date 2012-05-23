@@ -334,45 +334,76 @@ public class PropNetStateMachine extends StateMachine {
 	
 	/**
 	 * Split the given state machine into independent games.
+	 * A state that has been explored is added into mapping, and has been seen
 	 */
 	private void explore(Component c, Set<Component> partition, HashMap<Component,Component> mapping, Set<Component> seen) {
-		
+		if(seen.contains(c))
+			return;
+		seen.add(c);
+		// Since we have not seen this before, we must clone it.
+		mapping.put(c, c.copy_noCon());
+		for(Component i : c.getInputs()) {
+			explore(i, partition, mapping,  seen);
+			// Add appropriate cloned input.
+			mapping.get(c).addInput(mapping.get(i));
+		}
+		for(Component o : c.getOutputs()) {
+			explore(o, partition, mapping,  seen);
+			// Add appropriate cloned output
+			mapping.get(c).addInput(mapping.get(o));
+		}		
 	}
 	public ArrayList<PropNetStateMachine> splitGames() {
-		int set = 0;
-		Proposition terminal = propNet.getTerminalProposition();
-		ArrayList<Set<Component>> partitions = new ArrayList<Set<Component>>();
-		HashMap<Component, Component> cloneMap = new HashMap<Component, Component>();
-		Component terminalClone;
+		// Things in here are things we do not need to explore
 		HashSet<Component> seen = new HashSet<Component>();
+		
+		// Keep track of clones to allow connection to be made
+		HashMap<Component, Component> cloneMap = new HashMap<Component, Component>();
+		
+		Proposition terminal = propNet.getTerminalProposition();
+		// This will be set to what will be the new terminal node.
+		Component terminalClone;
+		
+		// These partitions will become our PropNetStateMachines
+		ArrayList<Set<Component>> partitions = new ArrayList<Set<Component>>();
+		
+		ArrayList<PropNetStateMachine> machines = new ArrayList<PropNetStateMachine>();
+		
+		// This will be a list of goal inputs.
+		HashSet<Component> goals = new HashSet<Component>();
+		// For each goal, we find its input, and we map it to a clone of the goal.
+		// This has the effect of removing the goal and creating a new goal for each subgame.
+		// We will do the same for Terminal.
+		
+		// Current assumption is all positive goals are ors, and 0 goals are ands.
+		for(Set<Proposition> rGoals :propNet.getGoalPropositions().values()) {
+			for(Proposition goal : rGoals){
+				seen.add(goal);
+				Component input = goal.getSingleInput();
+				// Ground assumptions. These may not be reasonable.
+				if (getGoalValue(goal)>0 && !(input instanceof Or)
+					||getGoalValue(goal)==0 && !(input instanceof And)) {
+					machines.add(this);
+					return machines;
+				}					
+				goals.add(goal.getSingleInput());
+			}
+		}
+		
+
+		
+
 		seen.add(terminal);
 		Component terminalInput = terminal.getSingleInput();
+		
 		seen.add(terminalInput);
 		Component clone;
 		if(terminalInput instanceof Or) {
-			for (Component tInput :terminal.getInputs()) {
+			for (Component tInput :terminalInput.getInputs()) {
 				if(!seen.contains(tInput)){
 					HashSet<Component> partition = new HashSet<Component>();
-					cloneMap = new HashMap<Component, Component>();					
-					
-					set++;
-					seen.add(tInput);
-					partitions.get(set).add(tInput);
-					// We now find all connected components. We do not mark goals or constants as seen, as these can be used in multiple places.
-					// I don't exactly know what to do about the init island of wonders...
-					HashSet<Component> explore = new HashSet<Component>();
-					explore.addAll(tInput.getInputs());
-					explore.addAll(tInput.getOutputs());
-					while(!explore.isEmpty()) {
-						Iterator<Component> itr = explore.iterator();
-						while(itr.hasNext()) {
-							Component next = itr.next();
-							if(seen.contains(next))
-								continue;
-						}
-					}
-					
-					
+					cloneMap = new HashMap<Component, Component>();
+					explore(tInput, partition, cloneMap, seen);	
 					partitions.add(partition);
 				}
 			}

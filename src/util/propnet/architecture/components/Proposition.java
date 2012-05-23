@@ -84,4 +84,10 @@ public final class Proposition extends Component
 	{
 		return toDot("circle", value ? "red" : "white", name.toString());
 	}
+
+	@Override
+	public Component copy_noCon() {
+		// TODO Auto-generated method stub
+		return new Proposition(this);
+	}
 }

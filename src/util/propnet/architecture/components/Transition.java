@@ -8,6 +8,7 @@ import util.propnet.architecture.Component;
 @SuppressWarnings("serial")
 public final class Transition extends Component
 {
+
 	/**
 	 * Returns the value of the input to the transition.
 	 * 
@@ -26,5 +27,11 @@ public final class Transition extends Component
 	public String toString()
 	{
 		return toDot("box", "grey", "TRANSITION");
+	}
+
+	@Override
+	public Component copy_noCon() {
+		// TODO Auto-generated method stub
+		return new Transition();
 	}
 }
