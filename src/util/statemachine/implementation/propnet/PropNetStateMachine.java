@@ -19,6 +19,7 @@ import util.gdl.grammar.GdlTerm;
 import util.propnet.architecture.Component;
 import util.propnet.architecture.PropNet;
 import util.propnet.architecture.components.And;
+import util.propnet.architecture.components.Constant;
 import util.propnet.architecture.components.Proposition;
 import util.propnet.architecture.components.Transition;
 import util.propnet.factory.OptimizingPropNetFactory;
@@ -73,10 +74,12 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public boolean isTerminal(MachineState state) {
         synchronized (PropNetStateMachine.class) {
+        	clearEverything();
         	this.injectState(state);
         	// not worth unrolling propagate truth, the terminal state seems to always be near the end
         	this.propogateTruth();
         	int count = 0;		
+
         	return propNet.getTerminalProposition().getValue();
         }
 	}
@@ -91,6 +94,7 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public int getGoal(MachineState state, Role role) throws GoalDefinitionException {
         synchronized (PropNetStateMachine.class) {
+        	clearEverything();
         	this.injectState(state);
         	this.propogateTruth();		
         	for(Proposition p : this.propNet.getGoalPropositions().get(role)){
@@ -98,6 +102,7 @@ public class PropNetStateMachine extends StateMachine {
         			return this.getGoalValue(p);
         		}
         	}
+
         	// not a thing, should we throw? 
         	return -1;
         }
@@ -111,6 +116,7 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public MachineState getInitialState() {
         synchronized (PropNetStateMachine.class) {
+        	clearEverything();
         	propNet.getInitProposition().setValue(true);
         	this.propogateTruth();		
         	MachineState s =  this.getStateFromBase();
@@ -125,6 +131,7 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public List<Move> getLegalMoves(MachineState state, Role role) throws MoveDefinitionException {
         synchronized (PropNetStateMachine.class) {
+        	clearEverything();
         	this.injectState(state);
         	Set<Proposition>  legal_props = this.propNet.getLegalPropositions().get(role);
         	List<Move> moves = new ArrayList<Move>();
@@ -142,6 +149,7 @@ public class PropNetStateMachine extends StateMachine {
         			break;
         		}
         	}
+
         	return moves;
         }
 	}
@@ -152,6 +160,10 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public MachineState getNextState(MachineState state, List<Move> moves) throws TransitionDefinitionException {
         synchronized (PropNetStateMachine.class) {
+        	clearEverything();
+        	for(Proposition p : propNet.getInputPropositions().values()) {
+        		p.setValue(false);
+        	}
         	this.injectState(state);
         	List<GdlTerm> terms = toDoes(moves);
         	for(GdlTerm t : terms) {
@@ -197,6 +209,7 @@ public class PropNetStateMachine extends StateMachine {
 		start.addAll(propNet.getBasePropositions().values());
 		start.add(propNet.getInitProposition());
 		
+		
 		// Have we already added the Component to the ordering?
 		Set<Component> used = new HashSet<Component>();		
 		Set<Component> frontier = new HashSet<Component>();
@@ -205,10 +218,14 @@ public class PropNetStateMachine extends StateMachine {
 		for(Component s :start) {
 			frontier.addAll(s.getOutputs());
 		}
-		frontier.addAll(propNet.getConstantComponents());
+		Set<Constant> constants = propNet.getConstantComponents(); 
+		for(Component c : constants) {
+			frontier.addAll(c.getOutputs());
+		}
+		used.addAll(constants);
 		used.addAll(start);
 		// Perform Depth first search of sorts
-		while(!frontier.isEmpty()){
+		while(!frontier.isEmpty()) {
 			// Add what we can to the ordering
 			Iterator<Component> iter = frontier.iterator();
 			fringe = new HashSet<Component>();
@@ -228,8 +245,7 @@ public class PropNetStateMachine extends StateMachine {
 					// Expand the frontier
 					fringe.addAll(c.getOutputs());
 				}
-			}
-			
+			}			
 			// Expand the frontier
 			fringe.removeAll(used);
 			frontier.addAll(fringe);
@@ -247,22 +263,28 @@ public class PropNetStateMachine extends StateMachine {
 	}
 
 	/* Helper methods */
-	
-	private static boolean updatePropositionValue(Proposition p) {
-		boolean val = p.getSingleInput().getValue();
-		p.setValue(val);
-		return val;
+	private void clearEverything() {
+		for(Proposition p :this.propNet.getPropositions()) {
+			p.setValue(false);
+		}
+    	for(Proposition p : propNet.getInputPropositions().values()) {
+    		p.setValue(false);
+    	}
+
 	}
 	private void propogateTruth(){
-		int i = 0;
+        synchronized (PropNetStateMachine.class) {
 		for(Proposition p : ordering) {
 			p.setValue(p.getSingleInput().getValue());
 		}
+        }
 	}
-	private void injectState(MachineState state){		
+	private void injectState(MachineState state){
+        synchronized (PropNetStateMachine.class) {
 		for(GdlSentence s : state.getContents()) {
 			propNet.getBasePropositions().get(s.toTerm()).setValue(true);
 		}
+        }
 	}	
 	
 	/**
@@ -279,8 +301,7 @@ public class PropNetStateMachine extends StateMachine {
 	private List<GdlTerm> toDoes(List<Move> moves)
 	{
 		List<GdlTerm> doeses = new ArrayList<GdlTerm>(moves.size());
-		Map<Role, Integer> roleIndices = getRoleIndices();
-		
+		Map<Role, Integer> roleIndices = getRoleIndices();		
 		for (int i = 0; i < roles.size(); i++)
 		{
 			int index = roleIndices.get(roles.get(i));
@@ -319,6 +340,7 @@ public class PropNetStateMachine extends StateMachine {
 	 */	
 	public MachineState getStateFromBase()
 	{
+        synchronized (PropNetStateMachine.class) {
 		Set<GdlSentence> contents = new HashSet<GdlSentence>();
 		for (Proposition p : propNet.getBasePropositions().values())
 		{
@@ -329,5 +351,29 @@ public class PropNetStateMachine extends StateMachine {
 			}
 		}
 		return new MachineState(contents);
+        }
 	}
+	
+	/* 
+	 * Returns the state minus all sentences not relevant to this Statemachine
+	 * Useful when in the context of caching
+	 */
+	@Override
+	public MachineState getReducedState(MachineState s) 
+	{
+        synchronized (PropNetStateMachine.class) {
+        clearEverything();
+		this.injectState(s);
+		Set<GdlSentence> contents = new HashSet<GdlSentence>();
+		for (Proposition p : propNet.getBasePropositions().values())
+		{
+			if (p.getValue())
+			{
+				contents.add(p.getName().toSentence());
+			}
+		}
+		return new MachineState(contents);
+        }
+	}
+	
 }

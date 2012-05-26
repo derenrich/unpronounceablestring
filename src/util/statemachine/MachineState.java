@@ -1,5 +1,6 @@
 package util.statemachine;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import util.gdl.grammar.Gdl;
@@ -23,7 +24,10 @@ public class MachineState {
     {
         this.contents = contents;
     }
-
+    public MachineState(MachineState state)
+    {
+        this.contents = new HashSet<GdlSentence>(state.getContents());
+    }
     /**
      * getContents returns the GDL sentences which determine the current state
      * of the game being played. Two given states with identical GDL sentences

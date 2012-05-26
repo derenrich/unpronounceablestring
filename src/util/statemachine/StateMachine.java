@@ -257,4 +257,8 @@ public abstract class StateMachine
         }
         return state;
     }    
+	public MachineState getReducedState(MachineState s) {
+		return s;
+	}
+
 }
