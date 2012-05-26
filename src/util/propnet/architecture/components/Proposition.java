@@ -87,7 +87,6 @@ public final class Proposition extends Component
 
 	@Override
 	public Component copy_noCon() {
-		// TODO Auto-generated method stub
 		return new Proposition(this);
 	}
 }
