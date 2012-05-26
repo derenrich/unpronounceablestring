@@ -26,6 +26,11 @@ public final class Proposition extends Component
 		this.value = false;
 	}
 
+	public Proposition(Proposition p)
+	{
+		this.name = p.getName();
+		this.value = p.getValue();
+	}
 	/**
 	 * Getter method.
 	 * 
@@ -78,5 +83,10 @@ public final class Proposition extends Component
 	public String toString()
 	{
 		return toDot("circle", value ? "red" : "white", name.toString());
+	}
+
+	@Override
+	public Component copy_noCon() {
+		return new Proposition(this);
 	}
 }

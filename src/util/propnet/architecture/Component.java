@@ -28,6 +28,11 @@ public abstract class Component implements Serializable
         this.outputs = new HashSet<Component>();
     }
 
+    public Component(Component c)
+    {
+        this.inputs = new HashSet<Component>();
+        this.outputs = new HashSet<Component>();
+    }
     /**
      * Adds a new input.
      * 
@@ -152,5 +157,6 @@ public abstract class Component implements Serializable
 
         return sb.toString();
     }
-
+    /* Copies, does not include input/outputs */
+    abstract public Component copy_noCon();
 }

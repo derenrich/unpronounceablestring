@@ -20,6 +20,7 @@ import util.propnet.architecture.Component;
 import util.propnet.architecture.PropNet;
 import util.propnet.architecture.components.And;
 import util.propnet.architecture.components.Constant;
+import util.propnet.architecture.components.Or;
 import util.propnet.architecture.components.Proposition;
 import util.propnet.architecture.components.Transition;
 import util.propnet.factory.OptimizingPropNetFactory;
@@ -41,6 +42,22 @@ public class PropNetStateMachine extends StateMachine {
     /** The player roles */
     private List<Role> roles;
     
+    public PropNetStateMachine(){
+    }
+    
+    public PropNetStateMachine(PropNet p){
+    	propNet = p;
+    	roles = propNet.getRoles();
+    	// Debug:
+    	//System.out.println("Links: "+propNet.getNumLinks());
+    	//System.out.println("bp: "+propNet.getBasePropositions().size());
+    	//System.out.println("bp: "+propNet.getBasePropositions().values().size());
+    	//System.out.println("Inputs: "+propNet.getInputPropositions().values().size());
+    	//System.out.println("Inputs: "+propNet.getInputPropositions().values());
+    	//splitGames();
+    	propNet.renderToFile("debug.txt");
+    	ordering = getOrdering();
+    }
     /**
      * Initializes the PropNetStateMachine. You should compute the topological
      * ordering here. Additionally you may compute the initial state here, at
@@ -62,6 +79,7 @@ public class PropNetStateMachine extends StateMachine {
         	System.out.println("bp: "+propNet.getBasePropositions().values().size());
         	System.out.println("Inputs: "+propNet.getInputPropositions().values().size());
         	System.out.println("Inputs: "+propNet.getInputPropositions().values());
+        	splitGames();
         	propNet.renderToFile("debug.txt");
         	ordering = getOrdering();
         }
@@ -376,4 +394,174 @@ public class PropNetStateMachine extends StateMachine {
         }
 	}
 	
+
+	/**
+	 * Split the given state machine into independent games.
+	 * A state that has been explored is added into mapping, and has been seen
+	 * @param specialComps 
+	 */
+	private void explore(Component c, Set<Component> partition, HashMap<Component,Component> mapping, Set<Component> seen, HashSet<Component> delayedEval) {
+		if(seen.contains(c))
+			return;
+		seen.add(c);
+		
+		if(mapping.containsKey(c)) {
+			// Here, c was in the mapping table, despite not having been seen. This means it was a special node.
+			delayedEval.add(c);
+		} else {
+			mapping.put(c, c.copy_noCon());
+			for(Component i : c.getInputs()) {
+				explore(i, partition, mapping,  seen, delayedEval);
+				// Add appropriate cloned input.
+				mapping.get(c).addInput(mapping.get(i));
+			}
+			for(Component o : c.getOutputs()) {
+				explore(o, partition, mapping,  seen, delayedEval);
+				// Add appropriate cloned output
+				mapping.get(c).addOutput(mapping.get(o));
+			}
+		}
+		partition.add(mapping.get(c));
+	}
+	public ArrayList<PropNetStateMachine> splitGames() {
+		// Things in here are things we do not need to explore
+		HashSet<Component> seen = new HashSet<Component>();
+		
+		// Keep track of clones to allow connection to be made
+		HashMap<Component, Component> cloneMap = new HashMap<Component, Component>();
+		
+		Proposition terminal = propNet.getTerminalProposition();
+		// This will be set to what will be the new terminal node.
+		
+		// This is a set to handle special cases, which we need to evaluate last.
+		HashSet<Component> specialComps;
+		
+		// These components can be legitimately contained by multiple games.
+		// Should include constants, init, goal inputs, terminal inputs
+		HashSet<Component> shared = new HashSet<Component>();
+		
+		// These partitions will become our PropNetStateMachines
+		ArrayList<Set<Component>> partitions = new ArrayList<Set<Component>>();
+		
+		ArrayList<PropNetStateMachine> machines = new ArrayList<PropNetStateMachine>();
+		
+		// This will be a list of goal inputs.
+		HashSet<Component> goals = new HashSet<Component>();
+		// For each goal, we find its input, and we map it to a clone of the goal.
+		// This has the effect of removing the goal and creating a new goal for each subgame.
+		// We will do the same for Terminal.
+		
+		// Current assumption is all positive goals are ors, and 0 goals are ands.
+		for(Set<Proposition> rGoals :propNet.getGoalPropositions().values()) {
+			for(Proposition goal : rGoals){
+				seen.add(goal);
+				Component input = goal.getSingleInput();
+				// Ground assumptions. These may not be reasonable.
+				if ((getGoalValue(goal)>0 && !(input instanceof Or))
+					||(getGoalValue(goal)==0 && !(input instanceof And))) {
+					machines.add(this);
+					return machines;
+				}					
+				goals.add(input);
+				shared.add(input);
+			}
+		}
+		
+		// Init is a special case
+		Component init = propNet.getInitProposition();
+		shared.add(init);
+
+		seen.add(terminal);
+		Component terminalInput = terminal.getSingleInput();
+		shared.add(terminalInput);
+		
+		// Constants are not currently being special cased...
+		// Constants should be in shared
+		
+		if(terminalInput instanceof Or) {
+			// Likely we'll actually want to enter from the inputs of goals, or something like that.
+			// This should work on lights out though.
+			for (Component goal:goals) {
+				for(Component tInput:goal.getInputs()) {
+			//for (Component tInput :terminalInput.getInputs()) {
+				seen.removeAll(shared);
+				if(!seen.contains(tInput)){
+					HashSet<Component> partition = new HashSet<Component>();
+					cloneMap = new HashMap<Component, Component>();
+					
+					// Set up new Goal node clones
+					for(Component g:goals){
+						//seen.add(g);
+						cloneMap.put(g,g.getSingleOutput().copy_noCon());
+					}
+					
+					// Set up new Terminal
+					cloneMap.put(terminalInput, terminal.copy_noCon());
+					
+					// Set up new Init
+					cloneMap.put(init, init.copy_noCon());
+					
+					// new list for handling special cases
+					specialComps = new HashSet<Component>();
+					
+					explore(tInput, partition, cloneMap, seen, specialComps);
+					
+					// Finish special partitions
+					for(Component c :specialComps) {
+						for(Component i : c.getInputs()) {
+							// Add appropriate cloned input, if in subgraph
+							if(cloneMap.containsKey(i))
+								cloneMap.get(c).addInput(cloneMap.get(i));
+						}
+						for(Component o : c.getOutputs()) {
+							// Add appropriate cloned output, if in subgraph
+							if(cloneMap.containsKey(o))
+								cloneMap.get(c).addOutput(cloneMap.get(o));
+						}
+					}
+					
+					partitions.add(partition);
+				}
+			}}
+		} else {
+			System.out.println("Terminal was not Or");
+			machines.add(this);
+			return machines;
+		}
+		seen.addAll(shared);
+		System.out.println("\nWe believe there are "+partitions.size() + " subgames.\n");
+		for(int i=0; i< partitions.size();i++) {
+			System.out.println("Parition " + i+" has "+partitions.get(i).size()+" components.\n");
+		}
+		System.out.println("We have used "+seen.size() + " of "+propNet.getComponents().size()+" components\n");
+		
+		// Create propNets
+		HashSet<Component> unused = new HashSet<Component>(propNet.getComponents());
+		unused.removeAll(seen);
+		for(Set<Component> part : partitions) {
+			// This should be ok since we're already giving up on concurrency. Maybe clone these instead?
+			System.out.print(part.size() +" + "+ unused.size() + "=");
+			part.addAll(unused);
+			System.out.println(part.size());
+			System.out.println("---Creating propNet");
+			PropNet p = new PropNet(roles, part);
+			System.out.println("---Created propNet");
+			System.out.println("Ands: "+p.getNumAnds());
+			System.out.println("Ors: "+p.getNumOrs());
+			System.out.println("Nots: "+p.getNumNots());			
+			System.out.println("Links: "+p.getNumLinks());
+			System.out.println("bps: "+p.getBasePropositions().size());
+			System.out.println("goals: "+p.getGoalPropositions().size());
+			System.out.println("inputs: "+p.getInputPropositions().size());
+			System.out.println("INIT:"+p.getInitProposition());
+			if(p.getInitProposition()!=null) {
+				System.out.println("Init child:"+p.getInitProposition().getOutputs().size());
+			}
+
+			System.out.println("TERMINAL:"+p.getTerminalProposition());
+			p.renderToFile("test"+partitions.indexOf(part)+".dot");
+			machines.add(new PropNetStateMachine(p));
+		}
+		return machines;
+	}
 }

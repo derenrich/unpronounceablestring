@@ -27,4 +27,10 @@ public final class Not extends Component
 	{
 		return toDot("invtriangle", "grey", "NOT");
 	}
+
+	@Override
+	public Component copy_noCon() {
+		// TODO Auto-generated method stub
+		return new Not();
+	}
 }
