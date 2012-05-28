@@ -44,9 +44,12 @@ public class GraphFactorPlayer extends StateMachineGamer {
 		// initialize the PropNet
 		if(this.getStateMachine() instanceof PropNetStateMachine) {
 			((PropNetStateMachine) this.getStateMachine()).initialize(this.match.getGame().getRules());
-		}
-		statemachines = new ArrayList<StateMachine>();
-		statemachines.add(this.getStateMachine());
+			statemachines = ((PropNetStateMachine) this.getStateMachine()).splitGames();
+			
+		} else {
+			statemachines = new ArrayList<StateMachine>();
+			statemachines.add(this.getStateMachine());			
+		}		
 		searchers = new ArrayList<AlphaBetaSearch>();
 		for(StateMachine sm  : statemachines) {
 			searchers.add(new AlphaBetaSearch (sm, this.getRole(), values, moves));

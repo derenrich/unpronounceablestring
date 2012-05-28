@@ -92,7 +92,6 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public boolean isTerminal(MachineState state) {
         synchronized (PropNetStateMachine.class) {
-        	clearEverything();
         	this.injectState(state);
         	// not worth unrolling propagate truth, the terminal state seems to always be near the end
         	this.propogateTruth();
@@ -112,7 +111,6 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public int getGoal(MachineState state, Role role) throws GoalDefinitionException {
         synchronized (PropNetStateMachine.class) {
-        	clearEverything();
         	this.injectState(state);
         	this.propogateTruth();		
         	for(Proposition p : this.propNet.getGoalPropositions().get(role)){
@@ -134,7 +132,6 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public MachineState getInitialState() {
         synchronized (PropNetStateMachine.class) {
-        	clearEverything();
         	propNet.getInitProposition().setValue(true);
         	this.propogateTruth();		
         	MachineState s =  this.getStateFromBase();
@@ -149,7 +146,6 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public List<Move> getLegalMoves(MachineState state, Role role) throws MoveDefinitionException {
         synchronized (PropNetStateMachine.class) {
-        	clearEverything();
         	this.injectState(state);
         	Set<Proposition>  legal_props = this.propNet.getLegalPropositions().get(role);
         	List<Move> moves = new ArrayList<Move>();
@@ -178,14 +174,15 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public MachineState getNextState(MachineState state, List<Move> moves) throws TransitionDefinitionException {
         synchronized (PropNetStateMachine.class) {
-        	clearEverything();
         	for(Proposition p : propNet.getInputPropositions().values()) {
         		p.setValue(false);
         	}
         	this.injectState(state);
         	List<GdlTerm> terms = toDoes(moves);
         	for(GdlTerm t : terms) {
-        		this.propNet.getInputPropositions().get(t).setValue(true);
+        		if(this.propNet.getInputPropositions().containsKey(t)) {
+        			this.propNet.getInputPropositions().get(t).setValue(true);
+        		}
         	}
         	this.propogateTruth();
         	MachineState s = this.getStateFromBase();
@@ -280,16 +277,6 @@ public class PropNetStateMachine extends StateMachine {
 		return roles;
 	}
 
-	/* Helper methods */
-	private void clearEverything() {
-		for(Proposition p :this.propNet.getPropositions()) {
-			p.setValue(false);
-		}
-    	for(Proposition p : propNet.getInputPropositions().values()) {
-    		p.setValue(false);
-    	}
-
-	}
 	private void propogateTruth(){
         synchronized (PropNetStateMachine.class) {
 		for(Proposition p : ordering) {
@@ -299,11 +286,16 @@ public class PropNetStateMachine extends StateMachine {
 	}
 	private void injectState(MachineState state){
         synchronized (PropNetStateMachine.class) {
+        for(Proposition p : propNet.getBasePropositions().values()) {
+        	p.setValue(false);
+        }
 		for(GdlSentence s : state.getContents()) {
-			propNet.getBasePropositions().get(s.toTerm()).setValue(true);
+			if(propNet.getBasePropositions().containsKey(s.toTerm())) {
+				propNet.getBasePropositions().get(s.toTerm()).setValue(true);
+			}
 		}
         }
-	}	
+	}
 	
 	/**
 	 * The Input propositions are indexed by (does ?player ?action).
@@ -380,7 +372,6 @@ public class PropNetStateMachine extends StateMachine {
 	public MachineState getReducedState(MachineState s) 
 	{
         synchronized (PropNetStateMachine.class) {
-        clearEverything();
 		this.injectState(s);
 		Set<GdlSentence> contents = new HashSet<GdlSentence>();
 		for (Proposition p : propNet.getBasePropositions().values())
@@ -423,7 +414,7 @@ public class PropNetStateMachine extends StateMachine {
 		}
 		partition.add(mapping.get(c));
 	}
-	public ArrayList<PropNetStateMachine> splitGames() {
+	public List<StateMachine> splitGames() {
 		// Things in here are things we do not need to explore
 		HashSet<Component> seen = new HashSet<Component>();
 		
@@ -443,7 +434,7 @@ public class PropNetStateMachine extends StateMachine {
 		// These partitions will become our PropNetStateMachines
 		ArrayList<Set<Component>> partitions = new ArrayList<Set<Component>>();
 		
-		ArrayList<PropNetStateMachine> machines = new ArrayList<PropNetStateMachine>();
+		ArrayList<StateMachine> machines = new ArrayList<StateMachine>();
 		
 		// This will be a list of goal inputs.
 		HashSet<Component> goals = new HashSet<Component>();
