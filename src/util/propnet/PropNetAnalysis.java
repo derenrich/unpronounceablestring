@@ -8,60 +8,206 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import util.gdl.grammar.GdlSentence;
 import util.propnet.architecture.Component;
 import util.propnet.architecture.PropNet;
 import util.propnet.architecture.components.*;
+import util.statemachine.MachineState;
+import util.statemachine.Role;
+import util.statemachine.implementation.propnet.PropNetStateMachine;
 
 
 public class PropNetAnalysis {
 	private PropNet propnet;
-	
+	private List<Proposition> latches;
+	private Map<Proposition,Set<Proposition>> reqs;
+	private Map<Proposition,Set<Proposition>> antireqs;
+	private Map<Role, Integer> bestGoals;
 	public PropNetAnalysis(PropNet propnet) {
 		this.propnet = propnet;
+		this.latches = detectLatches();
+		this.reqs = detectRequirements();
+		this.antireqs = detectRequirements();
+		this.bestGoals = new HashMap<Role, Integer>();
+		for(Role r : this.propnet.getRoles()) {
+			int max_goal = 100;
+			for(Proposition g : this.propnet.getGoalPropositions().get(r)) {
+				max_goal = Math.max(max_goal, PropNetStateMachine.getGoalValue(g));
+			}
+			this.bestGoals.put(r, max_goal);
+		}
+		System.out.println("---inhibitions---");
+		detectInhibitions();
+	}
+	/*
+	 * What is the most this state could be worth as a fraction of the best
+	 */
+	public float maxValue(MachineState state, Role r) {
+		Set<Proposition> props = new HashSet<Proposition>();
+		for(GdlSentence s : state.getContents()) {
+			if(propnet.getBasePropositions().containsKey(s.toTerm())) {
+				props.add(propnet.getBasePropositions().get(s.toTerm()));
+			}
+		}
+		for(Proposition p : props) {
+			if(this.latches.contains(p)) {
+			}
+		}
+		return 100f;
 	}
 	
-	public List<Proposition> detectLatches() {
+	private List<Proposition> detectLatches() {
 		List<Proposition> latches = new ArrayList<Proposition>();		
 		for(Proposition prop : propnet.getBasePropositions().values()) {
 			Set<Proposition> impliedTrue = new HashSet<Proposition>();
-			Set<Component> transitionedComponents = new HashSet<Component>(); 
-			Set<Component> deferredExplore = new HashSet<Component>();
+			Set<Proposition> impliedFalse = null;
+			Set<Component> transitionedComponents = new HashSet<Component>();
+			Set<Component> negatedComponents = new HashSet<Component>(); 
 			Stack<Component> toExplore = new Stack<Component>();
 			Set<Component> seen = new HashSet<Component>();
 			toExplore.addAll(prop.getOutputs());
 			while(toExplore.size() > 0) {
+				Component next = toExplore.pop();
+				explore(next, toExplore, impliedTrue, impliedFalse, transitionedComponents, negatedComponents, seen, true);
 				if(impliedTrue.contains(prop)) {
 					latches.add(prop);
 					break;
-				}
-				Component next = toExplore.pop();
-				if (next instanceof Proposition) {
-					impliedTrue.add((Proposition)next);					
-				}
-				// we do not explore through Not's or Constant's
-				if (next instanceof Proposition ||
-					next instanceof Or ) {
-					if(!seen.contains(next)) {
-						toExplore.addAll(next.getOutputs());
-					}
-					if(transitionedComponents.contains(next)) {
-						transitionedComponents.addAll(next.getOutputs());
-					}
-				}
-				if (next instanceof Transition &&
-					! transitionedComponents.contains(next)) {
-					transitionedComponents.add(next);
-					if(!seen.contains(next)) {
-						toExplore.addAll(next.getOutputs());
-						transitionedComponents.addAll(next.getOutputs());
-					}
-				}
-				if (next instanceof And) {
-					deferredExplore.add(next);
-				}
-				seen.add(next);
+				}				
 			}
-		}
+		}		
+		detectRequirements();
+		detectAntirequirements();
 		return latches;
 	}
+	private void explore(Component next, Stack<Component> toExplore,
+				Set<Proposition> impliedTrue,
+				Set<Proposition> impliedFalse,
+				Set<Component> transitionedComponents,
+				Set<Component> negatedComponents,
+				Set<Component> seen,
+				boolean transition){ 
+		if (seen.contains(next) || next instanceof Constant)
+			return;
+		if(!transition && next instanceof Transition)
+			return;
+		if (next instanceof Transition && transitionedComponents.contains(next))
+			return;
+		if (negatedComponents.contains(next)) {
+			if (next instanceof Or)
+				return;
+			if (impliedFalse != null && next instanceof Proposition) {
+				impliedFalse.add((Proposition)next);
+			}
+			if (transitionedComponents.contains(next) || next instanceof Transition) {
+				transitionedComponents.addAll(next.getOutputs());
+			}
+			if (!(next instanceof Not)) {
+				negatedComponents.addAll(next.getOutputs());
+			}
+		} else {
+			if (next instanceof And)
+				return;
+			if (impliedTrue != null && next instanceof Proposition) {
+				impliedTrue.add((Proposition)next);					
+			}
+			if(transitionedComponents.contains(next) || next instanceof Transition) {
+				transitionedComponents.addAll(next.getOutputs());
+			}
+			if (next instanceof Not) {
+				negatedComponents.addAll(next.getOutputs());
+			}
+		}
+		toExplore.addAll(next.getOutputs());
+		seen.add(next);
+		
+	}
+	/*
+	 * Antirequiement: q requires p iff q implies p
+	 */	
+	private Map<Proposition,Set<Proposition>> detectRequirements() {
+		Map<Proposition, Set<Proposition>> requirements = new HashMap<Proposition, Set<Proposition>>();		
+		for(Proposition prop : propnet.getBasePropositions().values()) {
+			Set<Proposition> impliedTrue = new HashSet<Proposition>();
+			Set<Proposition> impliedFalse = new HashSet<Proposition>();
+			Set<Component> transitionedComponents = new HashSet<Component>();
+			Set<Component> negatedComponents = new HashSet<Component>(); 
+			Stack<Component> toExplore = new Stack<Component>();
+			Set<Component> seen = new HashSet<Component>();
+			toExplore.add(prop);
+			negatedComponents.add(prop);
+			while(toExplore.size() > 0) {
+				Component next = toExplore.pop();
+				explore(next, 
+						toExplore,
+						impliedTrue,
+						impliedFalse,
+						transitionedComponents,
+						negatedComponents, seen,
+						/* do not pass through transitions */ false);				
+			}
+			impliedFalse.remove(prop);
+			requirements.put(prop, impliedFalse);
+		}
+		return requirements;
+	}
+	
+	/*
+	 * Antirequiement: q anti-requires p iff q implies not p
+	 */
+	private Map<Proposition,Set<Proposition>> detectAntirequirements() {
+		Map<Proposition, Set<Proposition>> antirequirements = new HashMap<Proposition, Set<Proposition>>();		
+		for(Proposition prop : propnet.getBasePropositions().values()) {
+			Set<Proposition> impliedTrue = new HashSet<Proposition>();
+			Set<Proposition> impliedFalse = new HashSet<Proposition>();
+			Set<Component> transitionedComponents = new HashSet<Component>();
+			Set<Component> negatedComponents = new HashSet<Component>(); 
+			Stack<Component> toExplore = new Stack<Component>();
+			Set<Component> seen = new HashSet<Component>();
+			toExplore.add(prop);
+			while(toExplore.size() > 0) {
+				Component next = toExplore.pop();
+				explore(next, 
+						toExplore,
+						impliedTrue,
+						impliedFalse,
+						transitionedComponents,
+						negatedComponents, seen,
+						/* do not pass through transitions */ false);				
+			}
+			impliedFalse.remove(prop);
+			impliedTrue.remove(prop);
+			antirequirements.put(prop, impliedFalse);
+		}
+		return antirequirements;
+	}
+	/*
+	 * Inhibitions: p inhibits q iff not p implies not q (now or in the next state)
+	 */	
+	private Map<Proposition,Set<Proposition>> detectInhibitions() {
+		Map<Proposition, Set<Proposition>> inhibitions = new HashMap<Proposition, Set<Proposition>>();		
+		for(Proposition prop : propnet.getBasePropositions().values()) {
+			Set<Proposition> impliedTrue = new HashSet<Proposition>();
+			Set<Proposition> impliedFalse = new HashSet<Proposition>();
+			Set<Component> transitionedComponents = new HashSet<Component>();
+			Set<Component> negatedComponents = new HashSet<Component>(); 
+			Stack<Component> toExplore = new Stack<Component>();
+			Set<Component> seen = new HashSet<Component>();
+			toExplore.add(prop);
+			while(toExplore.size() > 0) {
+				Component next = toExplore.pop();
+				explore(next, 
+						toExplore,
+						impliedTrue,
+						impliedFalse,
+						transitionedComponents,
+						negatedComponents, seen,
+						true);				
+			}
+			impliedFalse.remove(prop);
+			inhibitions.put(prop, impliedFalse);
+			System.out.println(prop + "====>" + impliedFalse);
+		}
+		return inhibitions;
+	}
+
 }

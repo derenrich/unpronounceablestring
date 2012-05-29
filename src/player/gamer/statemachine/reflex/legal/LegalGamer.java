@@ -5,6 +5,7 @@ import java.util.List;
 import player.gamer.statemachine.StateMachineGamer;
 import player.gamer.statemachine.reflex.event.ReflexMoveSelectionEvent;
 import player.gamer.statemachine.reflex.gui.ReflexDetailPanel;
+import util.propnet.PropNetAnalysis;
 import util.statemachine.Move;
 import util.statemachine.StateMachine;
 import util.statemachine.exceptions.GoalDefinitionException;
@@ -71,6 +72,7 @@ public final class LegalGamer extends StateMachineGamer
 		//return new ProverStateMachine();
 		PropNetStateMachine sm = new PropNetStateMachine();		
 		sm.initialize(this.match.getGame().getRules());
+		PropNetAnalysis pna = new PropNetAnalysis(sm.propNet);
 		return sm;
 	}
 	@Override

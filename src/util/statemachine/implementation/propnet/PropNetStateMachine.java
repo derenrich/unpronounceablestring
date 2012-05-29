@@ -36,7 +36,7 @@ import util.statemachine.implementation.prover.query.ProverQueryBuilder;
 @SuppressWarnings("unused")
 public class PropNetStateMachine extends StateMachine {
     /** The underlying proposition network  */
-    private PropNet propNet;
+    public PropNet propNet;
     /** The topological ordering of the propositions */
     private List<Proposition> ordering;
     /** The player roles */
@@ -335,7 +335,7 @@ public class PropNetStateMachine extends StateMachine {
 	 * @param goalProposition
 	 * @return the integer value of the goal proposition
 	 */	
-    private int getGoalValue(Proposition goalProposition)
+    public static int getGoalValue(Proposition goalProposition)
 	{
 		GdlRelation relation = (GdlRelation) goalProposition.getName().toSentence();
 		GdlConstant constant = (GdlConstant) relation.get(1);
