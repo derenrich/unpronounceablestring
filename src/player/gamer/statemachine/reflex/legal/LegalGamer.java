@@ -27,7 +27,8 @@ import apps.player.detail.DetailPanel;
  */
 public final class LegalGamer extends StateMachineGamer
 {
-	
+
+	private PropNetAnalysis pna;
 	/**
 	 * Does nothing for the metagame
 	 */
@@ -49,7 +50,8 @@ public final class LegalGamer extends StateMachineGamer
 		Move selection = moves.get(0);
 					
 		long stop = System.currentTimeMillis();
-
+		System.out.println(this.getCurrentState());
+		//System.out.println(this.pna.maxValue(this.getCurrentState(), this.getRole()));
 		notifyObservers(new ReflexMoveSelectionEvent(moves, selection, stop - start));
 		return selection;
 	}
@@ -72,7 +74,7 @@ public final class LegalGamer extends StateMachineGamer
 		//return new ProverStateMachine();
 		PropNetStateMachine sm = new PropNetStateMachine();		
 		sm.initialize(this.match.getGame().getRules());
-		PropNetAnalysis pna = new PropNetAnalysis(sm.propNet);
+		pna = new PropNetAnalysis(sm.propNet);
 		return sm;
 	}
 	@Override

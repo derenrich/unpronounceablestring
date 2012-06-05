@@ -14,12 +14,17 @@ import util.statemachine.StateMachine;
 import util.statemachine.exceptions.GoalDefinitionException;
 import util.statemachine.exceptions.MoveDefinitionException;
 import util.statemachine.exceptions.TransitionDefinitionException;
+import util.statemachine.implementation.propnet.PropNetStateMachine;
+import util.statemachine.implementation.propnet.SpeedyPropNetStateMachine;
 import util.statemachine.implementation.prover.ProverStateMachine;
 
 public class Minimax extends StateMachineGamer {
 	@Override
 	public StateMachine getInitialStateMachine() {
-		return new ProverStateMachine();
+		PropNetStateMachine sm = new PropNetStateMachine();		
+		sm.initialize(this.match.getGame().getRules());
+		return sm;
+		//return new SpeedyPropNetStateMachine(sm);
 	}
 	private int initial_search_depth = 3;
 	MinimaxThread searcher;

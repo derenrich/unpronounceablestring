@@ -38,24 +38,19 @@ public class PropNetStateMachine extends StateMachine {
     /** The underlying proposition network  */
     public PropNet propNet;
     /** The topological ordering of the propositions */
-    private List<Proposition> ordering;
+    public List<Proposition> ordering;
     /** The player roles */
     private List<Role> roles;
     
-    public PropNetStateMachine(){
+    private final Object lock = new Object();
+
+    
+    public PropNetStateMachine() {
     }
     
-    public PropNetStateMachine(PropNet p){
+    private PropNetStateMachine(PropNet p){
     	propNet = p;
     	roles = propNet.getRoles();
-    	// Debug:
-    	//System.out.println("Links: "+propNet.getNumLinks());
-    	//System.out.println("bp: "+propNet.getBasePropositions().size());
-    	//System.out.println("bp: "+propNet.getBasePropositions().values().size());
-    	//System.out.println("Inputs: "+propNet.getInputPropositions().values().size());
-    	//System.out.println("Inputs: "+propNet.getInputPropositions().values());
-    	//splitGames();
-    	propNet.renderToFile("debug.txt");
     	ordering = getOrdering();
     }
     /**
@@ -65,7 +60,7 @@ public class PropNetStateMachine extends StateMachine {
      */
     @Override
     public void initialize(List<Gdl> description) {
-        synchronized (PropNetStateMachine.class) {
+        synchronized (lock) {
         	System.out.println("Test");
         	try {
         		propNet = OptimizingPropNetFactory.create(description);
@@ -78,9 +73,8 @@ public class PropNetStateMachine extends StateMachine {
         	System.out.println("bp: "+propNet.getBasePropositions().size());
         	System.out.println("bp: "+propNet.getBasePropositions().values().size());
         	System.out.println("Inputs: "+propNet.getInputPropositions().values().size());
-        	System.out.println("Inputs: "+propNet.getInputPropositions().values());
         	splitGames();
-        	propNet.renderToFile("debug.txt");
+        	//propNet.renderToFile("debug.txt");
         	ordering = getOrdering();
         }
     }    
@@ -91,7 +85,7 @@ public class PropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public boolean isTerminal(MachineState state) {
-        synchronized (PropNetStateMachine.class) {
+        synchronized (lock) {
         	this.injectState(state);
         	// not worth unrolling propagate truth, the terminal state seems to always be near the end
         	this.propogateTruth();
@@ -110,7 +104,7 @@ public class PropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public int getGoal(MachineState state, Role role) throws GoalDefinitionException {
-        synchronized (PropNetStateMachine.class) {
+        synchronized (lock) {
         	this.injectState(state);
         	this.propogateTruth();		
         	for(Proposition p : this.propNet.getGoalPropositions().get(role)){
@@ -131,7 +125,7 @@ public class PropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public MachineState getInitialState() {
-        synchronized (PropNetStateMachine.class) {
+        synchronized (lock) {
         	propNet.getInitProposition().setValue(true);
         	this.propogateTruth();		
         	MachineState s =  this.getStateFromBase();
@@ -145,7 +139,7 @@ public class PropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public List<Move> getLegalMoves(MachineState state, Role role) throws MoveDefinitionException {
-        synchronized (PropNetStateMachine.class) {
+        synchronized (lock) {
         	this.injectState(state);
         	Set<Proposition>  legal_props = this.propNet.getLegalPropositions().get(role);
         	List<Move> moves = new ArrayList<Move>();
@@ -173,7 +167,7 @@ public class PropNetStateMachine extends StateMachine {
 	 */
 	@Override
 	public MachineState getNextState(MachineState state, List<Move> moves) throws TransitionDefinitionException {
-        synchronized (PropNetStateMachine.class) {
+        synchronized (lock) {
         	for(Proposition p : propNet.getInputPropositions().values()) {
         		p.setValue(false);
         	}
@@ -248,7 +242,7 @@ public class PropNetStateMachine extends StateMachine {
 				Component c = iter.next();
 				// check if all parents are computed
 				boolean addMe = true;
-				for(Component parent:c.getInputs()) {
+				for(Component parent : c.getInputs()) {
 					if(!used.contains(parent))
 						addMe = false;
 				}
@@ -260,11 +254,11 @@ public class PropNetStateMachine extends StateMachine {
 					// Expand the frontier
 					fringe.addAll(c.getOutputs());
 				}
-			}			
+			}
 			// Expand the frontier
 			fringe.removeAll(used);
 			frontier.addAll(fringe);
-			if(fringe.size()==0) {
+			if (fringe.size()==0) {
 				break;
 			}
 		}
@@ -278,14 +272,14 @@ public class PropNetStateMachine extends StateMachine {
 	}
 
 	private void propogateTruth(){
-        synchronized (PropNetStateMachine.class) {
+        synchronized (lock) {
 		for(Proposition p : ordering) {
 			p.setValue(p.getSingleInput().getValue());
 		}
         }
 	}
 	private void injectState(MachineState state){
-        synchronized (PropNetStateMachine.class) {
+        synchronized (lock) {
         for(Proposition p : propNet.getBasePropositions().values()) {
         	p.setValue(false);
         }
@@ -325,7 +319,7 @@ public class PropNetStateMachine extends StateMachine {
 	 * @param p
 	 * @return a PropNetMove
 	 */
-	private static Move getMoveFromProposition(Proposition p)
+	public static Move getMoveFromProposition(Proposition p)
 	{
 		return new Move(p.getName().toSentence().get(1).toSentence());
 	}
@@ -350,7 +344,7 @@ public class PropNetStateMachine extends StateMachine {
 	 */	
 	public MachineState getStateFromBase()
 	{
-        synchronized (PropNetStateMachine.class) {
+        synchronized (lock) {
 		Set<GdlSentence> contents = new HashSet<GdlSentence>();
 		for (Proposition p : propNet.getBasePropositions().values())
 		{
@@ -371,7 +365,7 @@ public class PropNetStateMachine extends StateMachine {
 	@Override
 	public MachineState getReducedState(MachineState s) 
 	{
-        synchronized (PropNetStateMachine.class) {
+        synchronized (lock) {
 		this.injectState(s);
 		Set<GdlSentence> contents = new HashSet<GdlSentence>();
 		for (Proposition p : propNet.getBasePropositions().values())
@@ -414,6 +408,7 @@ public class PropNetStateMachine extends StateMachine {
 		}
 		partition.add(mapping.get(c));
 	}
+	
 	public List<StateMachine> splitGames() {
 		// Things in here are things we do not need to explore
 		HashSet<Component> seen = new HashSet<Component>();
@@ -550,7 +545,6 @@ public class PropNetStateMachine extends StateMachine {
 			}
 
 			System.out.println("TERMINAL:"+p.getTerminalProposition());
-			p.renderToFile("test"+partitions.indexOf(part)+".dot");
 			machines.add(new PropNetStateMachine(p));
 		}
 		return machines;
