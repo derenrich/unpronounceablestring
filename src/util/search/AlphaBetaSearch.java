@@ -24,6 +24,12 @@ public class AlphaBetaSearch {
 	private ConcurrentHashMap<MachineState,Move> moves;
 	private Set<MachineState> wins;
 	private Set<MachineState> losses;
+	
+	private Set<Heuristic> oracles;
+	public void setOracles(Set<Heuristic> oracles) {
+		this.oracles = oracles;
+	}
+
 	private Heuristic h;
 	public AlphaBetaSearch(StateMachine sm,
 						   Role r,
@@ -36,6 +42,8 @@ public class AlphaBetaSearch {
 		wins = new HashSet<MachineState>();
 		losses = new HashSet<MachineState>();
 		h = new DummyHeuristic(sm, r);
+		oracles = new HashSet<Heuristic>();
+
 	}
 	private int getGoal(MachineState s) throws GoalDefinitionException{
 		if(sm.isTerminal(s)){
@@ -67,29 +75,29 @@ public class AlphaBetaSearch {
 		StateMachine sm = this.sm;
 		// have we not done this before?
 		// have we done it before but worse? 
-		if(!values.containsKey(s) || values.get(s).depth < game_depth + max_depth){
+		if(!values.containsKey(s) || values.get(s).depth < game_depth + max_depth){			
 			// are we at the base-case?
 			if(sm.isTerminal(s)){
 				Score score = new Score();
 				score.stateScore = getGoal(s);	
 				score.depth = game_depth + depth;
 				values.put(s, score);
-			} else if (wins.contains(s)) {
-				Score score = new Score();
-				score.stateScore = 1; // this is a hack, should be the actual value
-				score.depth = game_depth + depth;
-				values.put(s, score);	
-			} else if (losses.contains(s)) {
-				Score score = new Score();
-				score.stateScore = 0;		
-				score.depth = game_depth + depth;
-				values.put(s, score);		
 			} else if(depth >= max_depth){
 				Score score = new Score();
 				score.heuristicScore = h.getScore(s);		
 				score.depth = game_depth + depth;
 				values.put(s, score);
 			} else {
+				// Consult the oracles
+				for(Heuristic h : oracles) {
+					if(h.getScore(s) <= 0.3) {
+						Score score = new Score();
+						score.stateScore = h.getScore(s) * 100;	
+						score.depth = game_depth + depth;
+						values.put(s, score);				
+						return;
+					}
+				}								
 				List<Move> our_moves = sm.getLegalMoves(s, r);
 				List<Role> opposing_roles = new ArrayList<Role>(sm.getRoles());
 				opposing_roles.remove(r);				

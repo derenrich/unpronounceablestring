@@ -11,8 +11,8 @@
     <property name="target" value="1.6"/>
     <property name="source" value="1.6"/>
     <path id="GGP_Base.classpath">
+    	<pathelement location="bin/external/junit.jar" />
         <pathelement location="bin"/>
-    	<pathelement location="/usr/lib/eclipse/dropins/jdt/plugins/org.junit4/junit.jar" />
         <pathelement location="src/external/FlyingSaucer/core-renderer.jar"/>
         <pathelement location="src/external/JTidy/Tidy.jar"/>
         <pathelement location="src/external/JGoodiesForms/forms-1.2.1.jar"/>
@@ -33,7 +33,7 @@
     <target name="build-subprojects"/>
     <target depends="init" name="build-project">
         <echo message="${ant.project.name}: ${ant.file}"/>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="true" source="${source}" target="${target}">
             <src path="src"/>
             <classpath refid="GGP_Base.classpath"/>
         </javac>
