@@ -16,4 +16,7 @@ public class DCScore {
 		reached ++;
 		total += s;
 	}
+	public int getVisited() {
+		return reached;
+	}
 }
