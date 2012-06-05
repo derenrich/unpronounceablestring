@@ -13,9 +13,9 @@ import util.statemachine.exceptions.TransitionDefinitionException;
 public abstract class DepthCharger {
 	protected StateMachine sm;
 	protected Role ourPlayer;
-	protected ConcurrentHashMap<MachineState, Score> scores;
+	protected ConcurrentHashMap<MachineState, DCScore> scores;
 	protected List <MachineState> startStates;
-	public DepthCharger(StateMachine sm, Role ourPlayer, List <MachineState> startStates, ConcurrentHashMap<MachineState, Score> c) {
+	public DepthCharger(StateMachine sm, Role ourPlayer, List <MachineState> startStates, ConcurrentHashMap<MachineState, DCScore> c) {
 		this.sm = sm;
 		this.ourPlayer = ourPlayer;
 		this.startStates = startStates;
