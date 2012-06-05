@@ -14,7 +14,7 @@ public class NaiveDepthCharger extends DepthCharger{
 
 	public NaiveDepthCharger(StateMachine sm, Role ourPlayer,
 			List<MachineState> startStates,
-			ConcurrentHashMap<MachineState, Score> c) {
+			ConcurrentHashMap<MachineState, DCScore> c) {
 		super(sm, ourPlayer, startStates, c);
 	}
 
