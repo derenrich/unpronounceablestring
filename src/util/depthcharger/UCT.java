@@ -53,6 +53,9 @@ public class UCT extends DepthCharger{
 		Random r = new Random();
 		// What is the current estimate for a score of a state
 		HashMap<MachineState, DCScore> cache = new HashMap<MachineState, DCScore>();
+		for(MachineState start : startStates) {
+			cache.put(start, new DCScore());
+		}
 		// How many times have I had to make a choice at this node?
 		HashMap<MachineState, Integer> t = new HashMap<MachineState, Integer>();
 		// How many times have I chosen a move from a state
@@ -64,6 +67,7 @@ public class UCT extends DepthCharger{
 				MachineState cur = start;
 				try {
 					ArrayList<MachineState> path = new ArrayList<MachineState>();
+					path.add(start);
 					while(!sm.isTerminal(cur)) {
 						// Choose next move
 						List<List<Move>> moves = sm.getLegalJointMoves(cur);
