@@ -39,13 +39,20 @@ public class UCT extends DepthCharger{
 			if (!(o instanceof Pair)) return false;
 			Pair<?, ?> pairo = (Pair<?, ?>) o;
 			return this.left.equals(pairo.getLeft()) &&
-		           this.right.equals(pairo.getRight());
-		  }
-
+				   this.right.equals(pairo.getRight());
 		}
+
+	}
+	private int maxD;
 	public UCT(StateMachine sm, Role ourPlayer, List<MachineState> startStates,
 			ConcurrentHashMap<MachineState, DCScore> c) {
+		this(sm, ourPlayer, startStates, c, -1);
+		
+	}
+	public UCT(StateMachine sm, Role ourPlayer, List<MachineState> startStates,
+			ConcurrentHashMap<MachineState, DCScore> c,int maxD) {
 		super(sm, ourPlayer, startStates, c);
+		this.maxD=maxD;
 	}
 
 	@Override
@@ -68,39 +75,46 @@ public class UCT extends DepthCharger{
 				try {
 					ArrayList<MachineState> path = new ArrayList<MachineState>();
 					path.add(start);
+					int depth = 0;
 					while(!sm.isTerminal(cur)) {
 						// Choose next move
-						List<List<Move>> moves = sm.getLegalJointMoves(cur);
-						double ucb, max=-1;
-						HashSet<MachineState> maxIs = new HashSet<MachineState>();
-						MachineState maxI = null;
-						for(int i = 0; i<moves.size();i++) {
-							MachineState next = sm.getNextState(cur, moves.get(i));
-							if(!cache.containsKey(next)) {
-								cache.put(next, new DCScore());
+						if(maxD!=-1 && depth>maxD) {
+							// Remove cur from path, as performRememberingDepthCharge will read it.
+							cur = sm.performDepthCharge(cur, null);
+						}else{
+							List<List<Move>> moves = sm.getLegalJointMoves(cur);
+							double ucb, max=-1;
+							HashSet<MachineState> maxIs = new HashSet<MachineState>();
+							MachineState maxI = null;
+							for(int i = 0; i<moves.size();i++) {
+								MachineState next = sm.getNextState(cur, moves.get(i));
+								if(!cache.containsKey(next)) {
+									cache.put(next, new DCScore());
+								}
+								if(!t.containsKey(cur)) {
+									t.put(cur, 1);
+								}
+								if(!s.containsKey(new Pair<MachineState,MachineState>(cur,next))) {
+									s.put(new Pair<MachineState,MachineState>(cur,next), 1);
+								}
+								ucb = cache.get(next).value()+2*Cp*Math.sqrt(Math.log(t.get(cur))/s.get(new Pair<MachineState,MachineState>(cur,next)));
+								if(ucb>max) {
+									maxI = next;
+									maxIs = new HashSet<MachineState>();
+									maxIs.add(next);
+									max = ucb;
+								}else if(ucb==max) {
+									maxIs.add(next);
+								}
 							}
-							if(!t.containsKey(cur)) {
-								t.put(cur, 1);
-							}
-							if(!s.containsKey(new Pair<MachineState,MachineState>(cur,next))) {
-								s.put(new Pair<MachineState,MachineState>(cur,next), 1);
-							}
-							ucb = cache.get(next).value()+2*Cp*Math.sqrt(Math.log(t.get(cur))/s.get(new Pair<MachineState,MachineState>(cur,next)));
-							if(ucb>max) {
-								maxI = next;
-								maxIs = new HashSet<MachineState>();
-								maxIs.add(next);
-								max = ucb;
-							}else if(ucb==max) {
-								maxIs.add(next);
-							}
+							// Take Next move
+							maxI = (MachineState)maxIs.toArray()[r.nextInt(maxIs.size())];
+							path.add(maxI);
+							t.put(cur, t.get(cur)+1);
+							s.put(new Pair<MachineState, MachineState>(cur, maxI), s.get(new Pair<MachineState, MachineState>(cur, maxI))+1);
+							cur = maxI;
+							depth ++;
 						}
-						// Take Next move
-						maxI = (MachineState)maxIs.toArray()[r.nextInt(maxIs.size())];
-						path.add(maxI);
-						t.put(cur, t.get(cur)+1);
-						s.put(new Pair<MachineState, MachineState>(cur, maxI), s.get(new Pair<MachineState, MachineState>(cur, maxI))+1);
-						cur = maxI;						
 					}
 					// Update the values along the path
 					/* Get goal inbetween 0 and 100 */
