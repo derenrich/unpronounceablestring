@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import player.gamer.statemachine.StateMachineGamer;
+
 import util.statemachine.MachineState;
 import util.statemachine.Move;
 import util.statemachine.Role;
@@ -15,10 +17,11 @@ import util.statemachine.exceptions.TransitionDefinitionException;
 public class EndBook {
 	Set<MachineState> wins;
 	Set<MachineState> losses;
+	StateMachineGamer gamer;
 	volatile MachineState start;
 	StateMachine sm;
 	Role r;
-	final int THREAD_COUNT = 3;
+	final int THREAD_COUNT = 1;
 
 	/* State must be concurrent see Collections.newSetFromMap(new ConcurrentHashMap<Object,Boolean>()) */
 	public void generateBook(MachineState s, StateMachine sm, Role r, long timeout, Set<MachineState> wins, Set<MachineState> losses) throws InterruptedException {
@@ -43,10 +46,11 @@ public class EndBook {
 		return wins.size() + losses.size();
 	}
 	
-	public void expandBook(MachineState s, StateMachine sm, Role r, Set<MachineState> wins, Set<MachineState> losses) throws InterruptedException {
+	public void expandBook(StateMachineGamer gamer, StateMachine sm, Role r, Set<MachineState> wins, Set<MachineState> losses) throws InterruptedException {
 		this.wins = wins;
 		this.losses = losses;
-		this.start = s;
+		this.gamer = gamer;
+		this.start = gamer.getCurrentState();
 		this.sm = sm;
 		this.r = r;		
 		EndBookWriter t = new EndBookWriter();
@@ -118,6 +122,7 @@ public class EndBook {
 			while(!this.isInterrupted()){
 				try {
 					ArrayList<MachineState> history = new ArrayList<MachineState>();
+					start = gamer.getCurrentState();
 					MachineState final_state = sm.performRememberingDepthCharge(start, history);
 					// what are the odds of hitting the same final state? who knows?
 					if(!(checkWins(final_state) == 0)) {

@@ -1,6 +1,7 @@
 package player.gamer.statemachine.graph;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,9 +14,11 @@ import player.gamer.statemachine.StateMachineGamer;
 import player.gamer.statemachine.graph.GraphFactorPlayer.ABRunner;
 import util.depthcharger.DCScore;
 import util.depthcharger.NaiveDepthCharger;
+import util.depthcharger.UCT;
 import util.heuristic.Heuristic;
 import util.heuristic.PropNetAnalysisHeuristic;
 import util.heuristic.Score;
+import util.metagaming.EndBook;
 import util.propnet.PropNetAnalysis;
 import util.search.AlphaBetaSearch;
 import util.statemachine.CachedStateMachine;
@@ -39,7 +42,9 @@ public class UltimateGamer extends StateMachineGamer {
 	private int initial_search_depth = 2;
 	int game_depth = 0;
 	Thread main_thread;
-	
+	private Set<MachineState> wins;
+	private Set<MachineState> losses;
+
 	AlphaBetaSearch searcher;
 
 	
@@ -49,6 +54,7 @@ public class UltimateGamer extends StateMachineGamer {
 		pnsm.initialize(this.match.getGame().getRules());
 		SpeedyPropNetStateMachine spnsm = new SpeedyPropNetStateMachine(pnsm);
 		CachedStateMachine cspnsm = new CachedStateMachine(spnsm);
+
 		return cspnsm;
 	}
 
@@ -61,16 +67,25 @@ public class UltimateGamer extends StateMachineGamer {
 		searcher = new AlphaBetaSearch(this.getInitialStateMachine(), this.getRole(), values, moves);
 		
 		// KICK OFF MORE THREADS?
-		
+		wins = Collections.newSetFromMap(new ConcurrentHashMap<MachineState,Boolean>(1000000));
+		losses = Collections.newSetFromMap(new ConcurrentHashMap<MachineState,Boolean>(1000000));
+		EndBook book = new EndBook();
+		try {
+			book.expandBook(this, this.getStateMachine(), this.getRole(), wins, losses);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		main_thread = new Thread(new ABRunner(searcher, initial_search_depth, this.getCurrentState(), game_depth, this.getRole()));
+		main_thread.start();
 		System.out.println("Meta Game Overslept by: " + (timeout - System.currentTimeMillis()));
 	}
 
 	class DCRunner implements Runnable {
-		private NaiveDepthCharger charger;
+		private UCT charger;
 		public DCRunner(StateMachine sm, Role ourPlayer,
 				List<MachineState> startStates,
 				ConcurrentHashMap<MachineState, DCScore> c) {
-			charger = new NaiveDepthCharger(sm, ourPlayer, startStates,	c);
+			charger = new UCT(sm, ourPlayer, startStates,	c);
 		}
 		@Override
 		public void run() {
@@ -91,6 +106,8 @@ public class UltimateGamer extends StateMachineGamer {
 			this.abs = abs;
 			this.game_depth = game_depth;
 			this.role = role;
+			this.abs.setLosses(losses);
+			this.abs.setWins(wins);
 		}
 		@Override
 		public void run() {
@@ -135,6 +152,7 @@ public class UltimateGamer extends StateMachineGamer {
 	public Move stateMachineSelectMove(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException,
 			GoalDefinitionException {
+		try {
 		long time = System.currentTimeMillis();
 	    try {
 	    	if(main_thread != null) {
@@ -222,6 +240,12 @@ public class UltimateGamer extends StateMachineGamer {
 			System.out.println("Error occured. Playing randomly");
 			Random r = new Random();
 			return legalMoves.get((int) (r.nextDouble() * legalMoves.size()));
+		}
+		}catch(Exception e) {
+			System.out.println("Error occured. Playing randomly");
+			Random r = new Random();
+			List<Move> legalMoves = this.getStateMachine().getLegalMoves(getCurrentState(), getRole());
+			return legalMoves.get((int) (r.nextDouble() * legalMoves.size()));			
 		}
 	}
 	@Override

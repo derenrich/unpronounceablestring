@@ -23,6 +23,16 @@ public class AlphaBetaSearch {
 	private ConcurrentHashMap<MachineState,Score> values;
 	private ConcurrentHashMap<MachineState,Move> moves;
 	private Set<MachineState> wins;
+	public Set<MachineState> getWins() {
+		return wins;
+	}
+	public void setWins(Set<MachineState> wins) {
+		this.wins = wins;
+	}
+	public void setLosses(Set<MachineState> losses) {
+		this.losses = losses;
+	}
+
 	private Set<MachineState> losses;
 	
 	private Set<Heuristic> oracles;
@@ -87,17 +97,17 @@ public class AlphaBetaSearch {
 				score.heuristicScore = h.getScore(s);		
 				score.depth = game_depth + depth;
 				values.put(s, score);
+			} else if(wins.contains(s)) {
+				Score score = new Score();
+				score.stateScore = 100;		
+				score.depth = game_depth + depth;
+				values.put(s, score);
+			} else if(losses.contains(s)) {
+				Score score = new Score();
+				score.stateScore = 0;		
+				score.depth = game_depth + depth;
+				values.put(s, score);
 			} else {
-				// Consult the oracles
-				for(Heuristic h : oracles) {
-					if(h.getScore(s) <= 0.3) {
-						Score score = new Score();
-						score.stateScore = h.getScore(s) * 100;	
-						score.depth = game_depth + depth;
-						values.put(s, score);				
-						return;
-					}
-				}								
 				List<Move> our_moves = sm.getLegalMoves(s, r);
 				List<Role> opposing_roles = new ArrayList<Role>(sm.getRoles());
 				opposing_roles.remove(r);				
