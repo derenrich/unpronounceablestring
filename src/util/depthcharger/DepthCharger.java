@@ -6,9 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import util.statemachine.MachineState;
 import util.statemachine.Role;
 import util.statemachine.StateMachine;
-import util.statemachine.exceptions.GoalDefinitionException;
-import util.statemachine.exceptions.MoveDefinitionException;
-import util.statemachine.exceptions.TransitionDefinitionException;
 
 public abstract class DepthCharger {
 	protected StateMachine sm;
@@ -20,6 +17,9 @@ public abstract class DepthCharger {
 		this.ourPlayer = ourPlayer;
 		this.startStates = startStates;
 		this.scores = c;
+		for (MachineState s : startStates) {
+			c.put(s, new DCScore());
+		}
 	}
 	
 	public abstract void run_charges();
