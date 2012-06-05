@@ -3,6 +3,9 @@ package util.depthcharger;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import player.gamer.exception.MoveSelectionException;
+
+import util.logging.GamerLogger;
 import util.statemachine.MachineState;
 import util.statemachine.Role;
 import util.statemachine.StateMachine;
@@ -20,22 +23,28 @@ public class NaiveDepthCharger extends DepthCharger{
 
 	@Override
 	public void run_charges() {
+		int charge_count = 0;
 		while(!Thread.interrupted()){
 			for(MachineState s : startStates) {
 				try {
-					scores.get(s).addScore(sm.getGoal(sm.performDepthCharge(s, null),ourPlayer));
+					if(!Thread.currentThread().isInterrupted()) {
+						charge_count++;
+						scores.get(s).addScore(sm.getGoal(sm.performDepthCharge(s, null), ourPlayer));
+					} 
 				} catch (TransitionDefinitionException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (MoveDefinitionException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (GoalDefinitionException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+				}	catch (Exception e)
+				{
+				    GamerLogger.logStackTrace("GamePlayer", e);
 				}
+
 			}
 		}		
+		charge_count++;
 	}
 
 }

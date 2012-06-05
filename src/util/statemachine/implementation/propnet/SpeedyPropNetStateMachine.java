@@ -210,9 +210,6 @@ public class SpeedyPropNetStateMachine extends StateMachine {
 		ArrayList<Integer> idx_inputs = inputs[idx];
 		boolean state;
 		int single_in;
-		if(types == null || types[idx] ==null) {
-			System.out.println("foo");
-		}
 		switch(types[idx]) {
 		case OrType:
 			state = false;
@@ -242,7 +239,6 @@ public class SpeedyPropNetStateMachine extends StateMachine {
 			single_in = idx_inputs.get(0);
 			return search_values(single_in, states);
 		default:
-			System.out.println("THIS SHOULD NEVER HAPPEN GUYS");
 			break;
 		}
 		// NEVER HAPPENS		
